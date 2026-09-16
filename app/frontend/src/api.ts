@@ -38,6 +38,14 @@ export function addAccount(label: string, login: string, password: string): Prom
   }).then((res) => asJson<Account>(res));
 }
 
+export function updateAccount(id: number, label: string, password?: string): Promise<Account> {
+  return fetch(`${BASE}/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(password ? { label, password } : { label }),
+  }).then((res) => asJson<Account>(res));
+}
+
 export async function deleteAccount(id: number): Promise<void> {
   const res = await fetch(`${BASE}/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error(`Failed to delete account ${id}`);
@@ -73,6 +81,108 @@ export function listMessages(id: number): Promise<Message[]> {
   return fetch(`${BASE}/${id}/messages`).then((res) => asJson<Message[]>(res));
 }
 
-export function getMessage(id: number, messageId: number): Promise<MessageDetail> {
-  return fetch(`${BASE}/${id}/messages/${messageId}`).then((res) => asJson<MessageDetail>(res));
+export function getMessage(
+  id: number,
+  messageId: number,
+  folder?: "sent"
+): Promise<MessageDetail> {
+  const query = folder ? `?folder=${folder}` : "";
+  return fetch(`${BASE}/${id}/messages/${messageId}${query}`).then((res) =>
+    asJson<MessageDetail>(res)
+  );
+}
+
+export interface ThreadMessage extends Message {
+  folder: "received" | "sent";
+  direction: "in" | "out";
+}
+
+export interface MessageThread {
+  key: string;
+  subject: string;
+  participants: string[];
+  messageCount: number;
+  lastDate: string;
+  unread: boolean;
+  messages: ThreadMessage[];
+}
+
+export function listThreads(id: number): Promise<MessageThread[]> {
+  return fetch(`${BASE}/${id}/threads`).then((res) => asJson<MessageThread[]>(res));
+}
+
+export interface SubjectGrade {
+  id: number;
+  info: string;
+  value: string;
+}
+
+export interface SubjectSemester {
+  grades: SubjectGrade[];
+  tempAverage: number;
+  average: number;
+}
+
+export interface SubjectGrades {
+  name: string;
+  semester: SubjectSemester[];
+  tempAverage: number;
+  average: number;
+}
+
+export interface AbsenceDay {
+  date: string;
+  table: ({ type: string; id: number } | null)[];
+  info: string[];
+}
+
+export interface Absences {
+  /**
+   * Keyed by semester in principle, but a known _.groupBy bug in
+   * lib/resources/absence.js means the key is currently always "0" - every
+   * day lands in one bucket and no per-semester split actually exists.
+   * Do not build per-semester behaviour on this until the library is fixed.
+   */
+  semesters: Record<string, AbsenceDay[]>;
+}
+
+export interface AgendaEvent {
+  id: number;
+  day: string;
+  title: string;
+}
+
+export function getGrades(id: number): Promise<SubjectGrades[]> {
+  return fetch(`${BASE}/${id}/grades`).then((res) => asJson<SubjectGrades[]>(res));
+}
+
+export function getAbsences(id: number): Promise<Absences> {
+  return fetch(`${BASE}/${id}/absences`).then((res) => asJson<Absences>(res));
+}
+
+export function getAgenda(id: number, month?: number, year?: number): Promise<AgendaEvent[]> {
+  const params = new URLSearchParams();
+  if (month) params.set("month", String(month));
+  if (year) params.set("year", String(year));
+  const query = params.toString();
+  return fetch(`${BASE}/${id}/agenda${query ? `?${query}` : ""}`).then((res) =>
+    asJson<AgendaEvent[]>(res)
+  );
+}
+
+export interface AgendaEventDetail {
+  lesson?: string;
+  date?: string;
+  lessonNumber?: string;
+  teacher?: string;
+  type?: string;
+  subject?: string;
+  room?: string;
+  description?: string;
+  added?: string;
+  timespan?: string;
+}
+
+export function getAgendaEvent(id: number, eventId: number): Promise<AgendaEventDetail> {
+  return fetch(`${BASE}/${id}/agenda/${eventId}`).then((res) => asJson<AgendaEventDetail>(res));
 }

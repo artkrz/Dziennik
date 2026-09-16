@@ -151,3 +151,94 @@ test("GET /api/accounts/:id/messages/:messageId returns 404 when the message is 
     server.close();
   }
 });
+
+// Route-ordering regression test: if "/:id/messages/sent" were registered
+// after "/:id/messages/:messageId", Express would match the parameterised
+// route first, Number("sent") would be NaN, and this would 400 instead of
+// returning the sent list.
+test("GET /api/accounts/:id/messages/sent returns the sent list and asks Librus for folder 6", async () => {
+  const sentRows = [{ id: 9, user: "Rodzic", title: "Re: Zebranie", date: "2026-09-12", read: true }];
+  let requestedFolder;
+  const { server, base } = startApp(() => ({
+    authorize: async () => {},
+    inbox: {
+      listInbox: async (folderId) => {
+        requestedFolder = folderId;
+        return sentRows;
+      },
+    },
+  }));
+  try {
+    const account = await createAccount(base);
+    const res = await fetch(`${base}/api/accounts/${account.id}/messages/sent`);
+    assert.equal(res.status, 200);
+    assert.notEqual(res.status, 400);
+    assert.deepEqual(await res.json(), sentRows);
+    assert.equal(requestedFolder, 6);
+  } finally {
+    server.close();
+  }
+});
+
+test("GET /api/accounts/:id/threads returns grouped threads from both folders", async () => {
+  const received = [{ id: 1, user: "Kowalska Anna", title: "Zebranie", date: "2026-09-10", read: true }];
+  const sent = [{ id: 2, user: "Rodzic", title: "Re: Zebranie", date: "2026-09-11", read: true }];
+  const { server, base } = startApp(() => ({
+    authorize: async () => {},
+    inbox: {
+      listInbox: async (folderId) => (folderId === 6 ? sent : received),
+    },
+  }));
+  try {
+    const account = await createAccount(base);
+    const res = await fetch(`${base}/api/accounts/${account.id}/threads`);
+    assert.equal(res.status, 200);
+    const threads = await res.json();
+    assert.equal(threads.length, 1);
+    assert.equal(threads[0].messageCount, 2);
+  } finally {
+    server.close();
+  }
+});
+
+test("GET /api/accounts/:id/messages/:messageId?folder=sent asks Librus for folder 6, and without it for folder 5", async () => {
+  let requestedFolder;
+  const { server, base } = startApp(() => ({
+    authorize: async () => {},
+    inbox: {
+      getMessage: async (folderId) => {
+        requestedFolder = folderId;
+        return { title: "t", user: "u", date: "d", content: "c" };
+      },
+    },
+  }));
+  try {
+    const account = await createAccount(base);
+
+    await fetch(`${base}/api/accounts/${account.id}/messages/7?folder=sent`);
+    assert.equal(requestedFolder, 6);
+
+    await fetch(`${base}/api/accounts/${account.id}/messages/7`);
+    assert.equal(requestedFolder, 5);
+  } finally {
+    server.close();
+  }
+});
+
+test("GET /api/accounts/:id/threads returns 502 when Librus keeps failing", async () => {
+  const { server, base } = startApp(() => ({
+    authorize: async () => {},
+    inbox: {
+      listInbox: async () => {
+        throw new Error("boom");
+      },
+    },
+  }));
+  try {
+    const account = await createAccount(base);
+    const res = await fetch(`${base}/api/accounts/${account.id}/threads`);
+    assert.equal(res.status, 502);
+  } finally {
+    server.close();
+  }
+});

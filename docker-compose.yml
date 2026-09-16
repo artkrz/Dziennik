@@ -6,6 +6,7 @@ services:
     environment:
       - ACCOUNTS_ENC_KEY
       - DB_PATH=/data/accounts.db
+      - CACHE_TTL_MS
     volumes:
       - data:/data
     ports:

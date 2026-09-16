@@ -39,3 +39,23 @@ test("remove deletes the account", () => {
   assert.equal(store.get(id), undefined);
   assert.deepEqual(store.list(), []);
 });
+
+test("a label-only update leaves the stored password untouched", () => {
+  const store = freshStore();
+  const id = store.insert("Jas", "jas", Buffer.from("cipher"));
+
+  store.update(id, "Jaś nowy", null);
+
+  const row = store.get(id);
+  assert.equal(row.label, "Jaś nowy");
+  assert.ok(Buffer.from(row.password_encrypted).equals(Buffer.from("cipher")));
+});
+
+test("an update with a new password replaces it", () => {
+  const store = freshStore();
+  const id = store.insert("Jas", "jas", Buffer.from("cipher"));
+
+  store.update(id, "Jas", Buffer.from("new-cipher"));
+
+  assert.ok(Buffer.from(store.get(id).password_encrypted).equals(Buffer.from("new-cipher")));
+});

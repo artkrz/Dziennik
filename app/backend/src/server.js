@@ -1,25 +1,44 @@
 "use strict";
 const express = require("express");
-const { getEncryptionKey, encryptPassword, decryptPassword } = require("./crypto.js");
-const { createDb, makeAccountsStore } = require("./db.js");
+const { getEncryptionKey, encryptText, decryptText } = require("./crypto.js");
+const { createDb, makeAccountsStore, makeSessionsStore } = require("./db.js");
 const { createSessionManager } = require("./librusSessions.js");
+const { createCache } = require("./cache.js");
 const { createAccountsRouter } = require("./routes/accounts.js");
 const { createTimetableRouter } = require("./routes/timetable.js");
 const { createMessagesRouter } = require("./routes/messages.js");
+const { createGradesRouter } = require("./routes/grades.js");
+const { createAbsencesRouter } = require("./routes/absences.js");
+const { createAgendaRouter } = require("./routes/agenda.js");
+const { createAgendaEventRouter } = require("./routes/agendaEvent.js");
+const { createHomeworkRouter } = require("./routes/homework.js");
+const { createInfoRouter } = require("./routes/info.js");
 
 process.on("unhandledRejection", (err) => {
-  console.error("Unhandled rejection:", err);
+  // Only err.message - a raw AxiosError carries the plaintext Librus
+  // password in error.config.data.
+  console.error("Unhandled rejection: %s", err?.message ?? String(err));
 });
 
 function createApp({
   dbPath = process.env.DB_PATH || "/data/accounts.db",
-  librusFactory = () => new (require("../../../lib/api.js"))(),
+  librusFactory = (options) => new (require("../../../lib/api.js"))(undefined, options),
+  cacheTtlMs = Number(process.env.CACHE_TTL_MS) || 5 * 60 * 1000,
 } = {}) {
   getEncryptionKey();
 
   const db = createDb(dbPath);
   const accountsStore = makeAccountsStore(db);
-  const sessionManager = createSessionManager({ accountsStore, decryptPassword, librusFactory });
+  const sessionsStore = makeSessionsStore(db);
+  const sessionManager = createSessionManager({
+    accountsStore,
+    decryptPassword: decryptText,
+    librusFactory,
+    sessionsStore,
+    encryptText,
+    decryptText,
+  });
+  const cache = createCache({ ttlMs: cacheTtlMs });
 
   const app = express();
   app.use(express.json());
@@ -32,12 +51,24 @@ function createApp({
 
   app.use(
     "/api/accounts",
-    createAccountsRouter({ accountsStore, encryptPassword, sessionManager, librusFactory })
+    createAccountsRouter({ accountsStore, encryptPassword: encryptText, sessionManager, librusFactory, cache })
   );
 
-  app.use("/api/accounts", createTimetableRouter({ sessionManager }));
+  app.use("/api/accounts", createTimetableRouter({ sessionManager, cache }));
 
-  app.use("/api/accounts", createMessagesRouter({ sessionManager }));
+  app.use("/api/accounts", createMessagesRouter({ sessionManager, cache }));
+
+  app.use("/api/accounts", createGradesRouter({ sessionManager, cache }));
+
+  app.use("/api/accounts", createAbsencesRouter({ sessionManager, cache }));
+
+  app.use("/api/accounts", createAgendaRouter({ sessionManager, cache }));
+
+  app.use("/api/accounts", createAgendaEventRouter({ sessionManager, cache }));
+
+  app.use("/api/accounts", createHomeworkRouter({ sessionManager, cache }));
+
+  app.use("/api/accounts", createInfoRouter({ sessionManager, cache }));
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {

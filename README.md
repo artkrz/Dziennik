@@ -113,6 +113,14 @@ client.authorize("login", "pass").then(function () {
 
   // Get notifications
   client.info.getNotifications().then((data) => {});
+
+  // Persist a session across restarts (the jar is a bearer credential -
+  // encrypt it at rest and never log it)
+  const jar = client.exportSession();
+  const restored = new Librus(undefined, { session: jar });
+
+  // Typed failures
+  const { LibrusCaptchaError, LibrusSessionExpiredError } = require("librus-api/lib/errors.js");
 });
 ```
 

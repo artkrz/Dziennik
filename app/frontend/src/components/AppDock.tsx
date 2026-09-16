@@ -1,9 +1,9 @@
-import { CalendarDays, Mail, UserPlus } from "lucide-react";
+import { CalendarClock, CalendarDays, GraduationCap, House, Mail, Settings, UserX } from "lucide-react";
 import { cn } from "cn";
 import { Dock, DockIcon } from "./ui/dock";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "./ui/tooltip";
 
-export type View = "calendar" | "messages" | "add";
+export type View = "home" | "calendar" | "messages" | "grades" | "absences" | "agenda" | "settings";
 
 type DockItem = {
   view: View;
@@ -12,9 +12,13 @@ type DockItem = {
 };
 
 const ITEMS: DockItem[] = [
+  { view: "home", label: "Dzieci", Icon: House },
   { view: "calendar", label: "Plan lekcji", Icon: CalendarDays },
   { view: "messages", label: "Wiadomości", Icon: Mail },
-  { view: "add", label: "Dodaj konto", Icon: UserPlus },
+  { view: "grades", label: "Oceny", Icon: GraduationCap },
+  { view: "absences", label: "Frekwencja", Icon: UserX },
+  { view: "agenda", label: "Terminarz", Icon: CalendarClock },
+  { view: "settings", label: "Ustawienia", Icon: Settings },
 ];
 
 export default function AppDock({

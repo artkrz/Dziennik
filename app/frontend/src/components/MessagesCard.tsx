@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
-import { Account, listMessages, Message } from "../api";
+import { Account, listThreads, MessageThread } from "../api";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { Alert, AlertDescription } from "./ui/alert";
-import MessageDialog from "./MessageDialog";
+import ThreadDialog from "./ThreadDialog";
 
 export default function MessagesCard({ account }: { account: Account }) {
-  const [messages, setMessages] = useState<Message[] | null>(null);
+  const [threads, setThreads] = useState<MessageThread[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Message | null>(null);
+  const [selected, setSelected] = useState<MessageThread | null>(null);
 
   useEffect(() => {
     setError(null);
-    listMessages(account.id)
-      .then(setMessages)
+    listThreads(account.id)
+      .then(setThreads)
       .catch((err) =>
         setError(err instanceof Error ? err.message : "Nie udało się pobrać wiadomości")
       );
@@ -29,28 +29,33 @@ export default function MessagesCard({ account }: { account: Account }) {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        {!error && !messages && <p className="text-sm text-muted-foreground">Ładowanie…</p>}
-        {!error && messages && messages.length === 0 && (
+        {!error && !threads && <p className="text-sm text-muted-foreground">Ładowanie…</p>}
+        {!error && threads && threads.length === 0 && (
           <p className="text-sm text-muted-foreground">Brak wiadomości.</p>
         )}
-        {messages?.map((message) => (
+        {threads?.map((thread) => (
           <button
-            key={message.id}
+            key={thread.key}
             type="button"
-            onClick={() => setSelected(message)}
+            onClick={() => setSelected(thread)}
             className="flex flex-col rounded-md p-1 text-left text-sm transition-colors hover:bg-muted/50"
           >
-            <span className={message.read ? "" : "font-medium"}>{message.title}</span>
+            <span className={thread.unread ? "font-medium" : ""}>
+              {thread.subject}
+              {thread.messageCount > 1 && (
+                <span className="ml-1 text-muted-foreground">({thread.messageCount})</span>
+              )}
+            </span>
             <span className="text-muted-foreground">
-              {message.user} · {message.date}
+              {thread.participants.join(" · ")} · {thread.lastDate}
             </span>
           </button>
         ))}
         {selected && (
-          <MessageDialog
-            key={selected.id}
+          <ThreadDialog
+            key={selected.key}
             accountId={account.id}
-            message={selected}
+            thread={selected}
             open={selected !== null}
             onOpenChange={(next) => !next && setSelected(null)}
           />
