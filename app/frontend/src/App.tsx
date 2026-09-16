@@ -7,7 +7,7 @@ import ChildPicker from "./components/ChildPicker";
 import GradesCard from "./components/GradesCard";
 import MessagesCard from "./components/MessagesCard";
 import SettingsView from "./components/SettingsView";
-import TodayCard from "./components/TodayCard";
+import TimetableCard from "./components/TimetableCard";
 import { Alert, AlertDescription } from "./components/ui/alert";
 
 export default function App() {
@@ -90,9 +90,7 @@ export default function App() {
         ))}
 
       {view === "calendar" &&
-        contentView(
-          selected && <TodayCard account={selected} onDeleted={handleDeleted} />
-        )}
+        contentView(selected && <TimetableCard account={selected} />)}
 
       {view === "messages" &&
         contentView(selected && <MessagesCard account={selected} />)}
