@@ -86,3 +86,52 @@ test("DELETE /api/accounts/:id removes the account", async () => {
     server.close();
   }
 });
+
+test("DELETE /api/accounts/:id invalidates that account's cached data", async () => {
+  let gradesCalls = 0;
+  const { server, base } = startApp(() => ({
+    authorize: async () => {},
+    info: {
+      getGrades: async () => {
+        gradesCalls += 1;
+        return [{ subject: "Matematyka", grades: [] }];
+      },
+    },
+  }));
+  try {
+    const create = async (label, login) =>
+      (
+        await fetch(`${base}/api/accounts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ label, login, password: "pw" }),
+        })
+      ).json();
+
+    const jas = await create("Jas", "jas");
+    const ola = await create("Ola", "ola");
+
+    // Warm both caches.
+    assert.equal((await fetch(`${base}/api/accounts/${jas.id}/grades`)).status, 200);
+    assert.equal((await fetch(`${base}/api/accounts/${ola.id}/grades`)).status, 200);
+    assert.equal(gradesCalls, 2);
+
+    // A second read is served from the cache.
+    assert.equal((await fetch(`${base}/api/accounts/${jas.id}/grades`)).status, 200);
+    assert.equal(gradesCalls, 2);
+
+    assert.equal((await fetch(`${base}/api/accounts/${jas.id}`, { method: "DELETE" })).status, 204);
+
+    // The deleted account's grades are no longer served from the cache: the
+    // request goes back to Librus, which now fails because the account is
+    // gone. Before the fix this returned 200 with the cached grades.
+    const afterDelete = await fetch(`${base}/api/accounts/${jas.id}/grades`);
+    assert.equal(afterDelete.status, 502);
+
+    // The other account's cache is untouched.
+    assert.equal((await fetch(`${base}/api/accounts/${ola.id}/grades`)).status, 200);
+    assert.equal(gradesCalls, 2);
+  } finally {
+    server.close();
+  }
+});

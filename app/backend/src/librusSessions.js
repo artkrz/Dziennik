@@ -12,6 +12,13 @@ function createSessionManager({
     librusFactory || ((options) => new (require("../../../lib/api.js"))(undefined, options));
   const clients = new Map();
   const pendingLogins = new Map();
+  // Bumped by forget(). A login that started before the bump must not
+  // resurrect the account when it finally resolves.
+  const generations = new Map();
+
+  function generationOf(accountId) {
+    return generations.get(accountId) || 0;
+  }
 
   /** Decrypt a stored jar, or undefined if there isn't a usable one. */
   function restoreSession(accountId) {
@@ -55,6 +62,7 @@ function createSessionManager({
     if (pending) return pending;
 
     const attempt = (async () => {
+      const generation = generationOf(accountId);
       const account = accountsStore.get(accountId);
       if (!account) {
         throw new Error(`Unknown account ${accountId}`);
@@ -62,6 +70,11 @@ function createSessionManager({
       const password = decryptPassword(account.password_encrypted);
       const client = factory({});
       await client.authorize(account.login, password);
+      if (generationOf(accountId) !== generation) {
+        // forget() ran while this login was in flight - do not resurrect
+        // the account's client or re-persist its session.
+        return client;
+      }
       clients.set(accountId, client);
       persistSession(accountId, client);
       return client;
@@ -89,12 +102,18 @@ function createSessionManager({
       return await fn(client);
     } catch (error) {
       if (fresh) throw error;
+      // Without this line a silently doubled login rate looks like a
+      // healthy app. Log error.message only - a raw AxiosError carries the
+      // plaintext Librus password in error.config.data.
+      console.error("retrying account %s after a failed request: %s", accountId, error.message);
       client = await login(accountId);
       return fn(client);
     }
   }
 
   function forget(accountId) {
+    generations.set(accountId, generationOf(accountId) + 1);
+    pendingLogins.delete(accountId);
     clients.delete(accountId);
     if (sessionsStore) sessionsStore.remove(accountId);
   }

@@ -43,11 +43,28 @@ function createCache({ ttlMs = 5 * 60 * 1000, now = Date.now } = {}) {
     entries.delete(key);
   }
 
+  /**
+   * Drop every entry belonging to one account.
+   *
+   * cacheKey always puts accountId first in the parts array, so an
+   * account's keys all contain ":[<id>," or ":[<id>]". The boundary check
+   * matters: without it, account 5 would also match account 51's keys.
+   */
+  function invalidateAccount(accountId) {
+    const needle = `:[${JSON.stringify(accountId)}`;
+    for (const key of [...entries.keys()]) {
+      const at = key.indexOf(needle);
+      if (at === -1) continue;
+      const next = key[at + needle.length];
+      if (next === "," || next === "]") entries.delete(key);
+    }
+  }
+
   function clear() {
     entries.clear();
   }
 
-  return { fetch, invalidate, clear };
+  return { fetch, invalidate, invalidateAccount, clear };
 }
 
 /**

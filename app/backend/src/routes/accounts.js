@@ -1,7 +1,7 @@
 "use strict";
 const express = require("express");
 
-function createAccountsRouter({ accountsStore, encryptPassword, sessionManager, librusFactory }) {
+function createAccountsRouter({ accountsStore, encryptPassword, sessionManager, librusFactory, cache }) {
   const router = express.Router();
 
   router.get("/", (req, res) => {
@@ -36,6 +36,9 @@ function createAccountsRouter({ accountsStore, encryptPassword, sessionManager, 
     const id = Number(req.params.id);
     accountsStore.remove(id);
     sessionManager.forget(id);
+    // Otherwise a deleted student's grades, absences, agenda, homework and
+    // inbox keep being served for the rest of the cache TTL.
+    if (cache) cache.invalidateAccount(id);
     res.status(204).end();
   });
 

@@ -167,3 +167,80 @@ test("withSession retries with a fresh login when the restored jar turns out to 
   assert.equal(calls, 2);
   assert.equal(authorizeCalls, 1);
 });
+
+test("a login in flight when forget runs does not resurrect the client or persist its jar", async () => {
+  const saved = [];
+  let releaseAuthorize;
+  const gate = new Promise((resolve) => { releaseAuthorize = resolve; });
+  let authorizeCalls = 0;
+  const removed = [];
+
+  const manager = createSessionManager({
+    accountsStore: stubAccountsStore({ id: 1, login: "u", password_encrypted: Buffer.from("x") }),
+    decryptPassword: () => "plain-pass",
+    librusFactory: () => ({
+      authorize: async () => { authorizeCalls += 1; await gate; },
+      exportSession: () => "fresh-jar",
+    }),
+    sessionsStore: {
+      save: (id, blob) => saved.push([id, blob.toString()]),
+      load: () => undefined,
+      remove: (id) => removed.push(id),
+    },
+    encryptText: (text) => Buffer.from(text),
+    decryptText: () => "",
+  });
+
+  const inFlight = manager.login(1);
+  // Let the attempt get as far as authorize() before the account is deleted.
+  await new Promise((resolve) => setImmediate(resolve));
+  manager.forget(1);
+  releaseAuthorize();
+  await inFlight;
+
+  // No encrypted cookie jar was written for an account that no longer exists.
+  assert.deepEqual(saved, []);
+  assert.deepEqual(removed, [1]);
+  assert.equal(authorizeCalls, 1);
+
+  // And the client was not cached either - the next call logs in again.
+  await manager.withSession(1, async () => "ok");
+  assert.equal(authorizeCalls, 2);
+});
+
+test("forget clears the pending login so a concurrent request starts a new one", async () => {
+  const saved = [];
+  let releaseAuthorize;
+  const gate = new Promise((resolve) => { releaseAuthorize = resolve; });
+  let authorizeCalls = 0;
+
+  const manager = createSessionManager({
+    accountsStore: stubAccountsStore({ id: 1, login: "u", password_encrypted: Buffer.from("x") }),
+    decryptPassword: () => "plain-pass",
+    librusFactory: () => ({
+      authorize: async () => { authorizeCalls += 1; await gate; },
+      exportSession: () => "fresh-jar",
+    }),
+    sessionsStore: {
+      save: (id, blob) => saved.push([id, blob.toString()]),
+      load: () => undefined,
+      remove() {},
+    },
+    encryptText: (text) => Buffer.from(text),
+    decryptText: () => "",
+  });
+
+  const inFlight = manager.login(1);
+  await new Promise((resolve) => setImmediate(resolve));
+  manager.forget(1);
+  // A request arriving while the abandoned login is still in flight must
+  // not be handed that login's promise.
+  const second = manager.login(1);
+  assert.notEqual(second, inFlight);
+  releaseAuthorize();
+  await Promise.all([inFlight, second]);
+
+  assert.equal(authorizeCalls, 2);
+  // Only the login that started after forget() persisted a jar.
+  assert.deepEqual(saved, [[1, "fresh-jar"]]);
+});

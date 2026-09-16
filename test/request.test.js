@@ -49,3 +49,16 @@ test("looksLikeLoginPage ignores a page that merely mentions logging in", () => 
   const $ = Librus._loadDocument("<html><body><p>Zostales wylogowany. Zaloguj sie ponownie.</p></body></html>");
   assert.equal(Librus.looksLikeLoginPage($, "https://synergia.librus.pl/uczen_index"), false);
 });
+
+// The two tests above exercise only the URL branch: the fixture is served
+// from a /loguj URL, so looksLikeLoginPage returns before it ever inspects
+// the markup. These pin the markup signals directly.
+test("looksLikeLoginPage detects a login form on a non-login URL", () => {
+  const $ = Librus._loadDocument(LOGIN_PAGE);
+  assert.equal(Librus.looksLikeLoginPage($, "https://synergia.librus.pl/uczen_index"), true);
+});
+
+test("looksLikeLoginPage ignores a lone login input with no password field", () => {
+  const $ = Librus._loadDocument('<html><body><form><input name="login" /></form></body></html>');
+  assert.equal(Librus.looksLikeLoginPage($, undefined), false);
+});

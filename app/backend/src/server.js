@@ -17,7 +17,7 @@ const { createInfoRouter } = require("./routes/info.js");
 process.on("unhandledRejection", (err) => {
   // Only err.message - a raw AxiosError carries the plaintext Librus
   // password in error.config.data.
-  console.error("Unhandled rejection: %s", err?.message || err);
+  console.error("Unhandled rejection: %s", err?.message ?? String(err));
 });
 
 function createApp({
@@ -51,7 +51,7 @@ function createApp({
 
   app.use(
     "/api/accounts",
-    createAccountsRouter({ accountsStore, encryptPassword: encryptText, sessionManager, librusFactory })
+    createAccountsRouter({ accountsStore, encryptPassword: encryptText, sessionManager, librusFactory, cache })
   );
 
   app.use("/api/accounts", createTimetableRouter({ sessionManager, cache }));

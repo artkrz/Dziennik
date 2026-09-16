@@ -57,3 +57,39 @@ test("an unusable session still leaves the client with a caller", async () => {
   await client._callerReady;
   assert.deepEqual(client.caller, { marker: true });
 });
+
+test("_request waits for the real caller instead of dereferencing undefined", async () => {
+  // Every other test injects options.caller, which makes _initializeCaller
+  // assign this.caller before its first await. On the production path the
+  // dynamic import() of axios-cookiejar-support makes the assignment
+  // asynchronous, so _request has to wait for _callerReady itself.
+  const source = new Librus(undefined, { caller: {} });
+  await source.cookie.setCookie("DeviceCookie=dev-1; Path=/", "https://api.librus.pl");
+  const serialized = source.exportSession();
+
+  const client = new Librus(undefined, { session: serialized, requestTimeout: 2000 });
+  // The seam this test exists for: the real caller is not there yet.
+  assert.equal(client.caller, undefined);
+
+  // A closed local port keeps this offline and instant: the request must
+  // get far enough to fail with a connection error, not a TypeError on an
+  // undefined caller.
+  await assert.rejects(
+    () => client._request("get", "https://127.0.0.1:1/przegladaj_oceny/uczen"),
+    (error) => {
+      assert.ok(
+        !(error instanceof TypeError),
+        `expected a transport error, got ${error.name}: ${error.message}`
+      );
+      assert.ok(
+        !/Cannot read properties of undefined/.test(error.message),
+        `expected a transport error, got ${error.name}: ${error.message}`
+      );
+      return true;
+    }
+  );
+
+  // The restored jar must still be intact once the caller is built.
+  const cookies = await client.cookie.getCookies("https://api.librus.pl");
+  assert.ok(cookies.map((c) => c.key).includes("DeviceCookie"));
+});

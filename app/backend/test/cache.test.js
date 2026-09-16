@@ -72,3 +72,38 @@ test("cacheKey is stable for identical inputs", () => {
   assert.equal(cacheKey("timetable", 1, "2026-09-14", "2026-09-20"),
                cacheKey("timetable", 1, "2026-09-14", "2026-09-20"));
 });
+
+test("invalidateAccount drops one account's keys across every prefix", async () => {
+  const cache = createCache({ ttlMs: 60000 });
+  await cache.fetch(cacheKey("grades", 5), async () => "g5");
+  await cache.fetch(cacheKey("absences", 5), async () => "a5");
+  await cache.fetch(cacheKey("timetable", 5, "2026-09-14", "2026-09-20"), async () => "t5");
+  await cache.fetch(cacheKey("grades", 7), async () => "g7");
+
+  cache.invalidateAccount(5);
+
+  assert.equal(await cache.fetch(cacheKey("grades", 5), async () => "g5-new"), "g5-new");
+  assert.equal(await cache.fetch(cacheKey("absences", 5), async () => "a5-new"), "a5-new");
+  assert.equal(
+    await cache.fetch(cacheKey("timetable", 5, "2026-09-14", "2026-09-20"), async () => "t5-new"),
+    "t5-new"
+  );
+  // A different account is untouched.
+  assert.equal(await cache.fetch(cacheKey("grades", 7), async () => "g7-new"), "g7");
+});
+
+test("invalidateAccount does not drop account 51 when invalidating account 5", async () => {
+  const cache = createCache({ ttlMs: 60000 });
+  await cache.fetch(cacheKey("grades", 5), async () => "g5");
+  await cache.fetch(cacheKey("grades", 51), async () => "g51");
+  await cache.fetch(cacheKey("timetable", 51, "2026-09-14"), async () => "t51");
+
+  cache.invalidateAccount(5);
+
+  assert.equal(await cache.fetch(cacheKey("grades", 5), async () => "g5-new"), "g5-new");
+  assert.equal(await cache.fetch(cacheKey("grades", 51), async () => "g51-new"), "g51");
+  assert.equal(
+    await cache.fetch(cacheKey("timetable", 51, "2026-09-14"), async () => "t51-new"),
+    "t51"
+  );
+});

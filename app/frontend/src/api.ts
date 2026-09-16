@@ -103,6 +103,12 @@ export interface AbsenceDay {
 }
 
 export interface Absences {
+  /**
+   * Keyed by semester in principle, but a known _.groupBy bug in
+   * lib/resources/absence.js means the key is currently always "0" - every
+   * day lands in one bucket and no per-semester split actually exists.
+   * Do not build per-semester behaviour on this until the library is fixed.
+   */
   semesters: Record<string, AbsenceDay[]>;
 }
 
