@@ -1,9 +1,9 @@
-import { CalendarDays, Mail, UserPlus } from "lucide-react";
+import { CalendarClock, CalendarDays, GraduationCap, Mail, UserPlus } from "lucide-react";
 import { cn } from "cn";
 import { Dock, DockIcon } from "./ui/dock";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "./ui/tooltip";
 
-export type View = "calendar" | "messages" | "add";
+export type View = "calendar" | "messages" | "grades" | "agenda" | "add";
 
 type DockItem = {
   view: View;
@@ -14,6 +14,8 @@ type DockItem = {
 const ITEMS: DockItem[] = [
   { view: "calendar", label: "Plan lekcji", Icon: CalendarDays },
   { view: "messages", label: "Wiadomości", Icon: Mail },
+  { view: "grades", label: "Oceny", Icon: GraduationCap },
+  { view: "agenda", label: "Terminarz", Icon: CalendarClock },
   { view: "add", label: "Dodaj konto", Icon: UserPlus },
 ];
 

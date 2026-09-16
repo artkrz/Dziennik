@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { Account, listAccounts } from "./api";
+import AbsencesCard from "./components/AbsencesCard";
 import AddAccountForm from "./components/AddAccountForm";
+import AgendaCard from "./components/AgendaCard";
 import AppDock, { View } from "./components/AppDock";
+import GradesCard from "./components/GradesCard";
 import MessagesCard from "./components/MessagesCard";
 import TodayCard from "./components/TodayCard";
 import { Alert, AlertDescription } from "./components/ui/alert";
@@ -73,6 +76,25 @@ export default function App() {
             ))}
           </BentoGrid>
         ))}
+
+      {view === "grades" && accounts.length > 0 && (
+        <BentoGrid className="grid-cols-1 auto-rows-auto md:grid-cols-2 xl:grid-cols-3">
+          {accounts.map((account) => (
+            <GradesCard key={account.id} account={account} />
+          ))}
+          {accounts.map((account) => (
+            <AbsencesCard key={`abs-${account.id}`} account={account} />
+          ))}
+        </BentoGrid>
+      )}
+
+      {view === "agenda" && accounts.length > 0 && (
+        <BentoGrid className="grid-cols-1 auto-rows-auto md:grid-cols-2 xl:grid-cols-3">
+          {accounts.map((account) => (
+            <AgendaCard key={account.id} account={account} />
+          ))}
+        </BentoGrid>
+      )}
 
       <AppDock view={view} onChange={setView} />
     </main>

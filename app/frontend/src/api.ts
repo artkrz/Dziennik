@@ -76,3 +76,56 @@ export function listMessages(id: number): Promise<Message[]> {
 export function getMessage(id: number, messageId: number): Promise<MessageDetail> {
   return fetch(`${BASE}/${id}/messages/${messageId}`).then((res) => asJson<MessageDetail>(res));
 }
+
+export interface SubjectGrade {
+  id: number;
+  info: string;
+  value: string;
+}
+
+export interface SubjectSemester {
+  grades: SubjectGrade[];
+  tempAverage: number;
+  average: number;
+}
+
+export interface SubjectGrades {
+  name: string;
+  semester: SubjectSemester[];
+  tempAverage: number;
+  average: number;
+}
+
+export interface AbsenceDay {
+  date: string;
+  table: ({ type: string; id: number } | null)[];
+  info: string[];
+}
+
+export interface Absences {
+  semesters: Record<string, AbsenceDay[]>;
+}
+
+export interface AgendaEvent {
+  id: number;
+  day: string;
+  title: string;
+}
+
+export function getGrades(id: number): Promise<SubjectGrades[]> {
+  return fetch(`${BASE}/${id}/grades`).then((res) => asJson<SubjectGrades[]>(res));
+}
+
+export function getAbsences(id: number): Promise<Absences> {
+  return fetch(`${BASE}/${id}/absences`).then((res) => asJson<Absences>(res));
+}
+
+export function getAgenda(id: number, month?: number, year?: number): Promise<AgendaEvent[]> {
+  const params = new URLSearchParams();
+  if (month) params.set("month", String(month));
+  if (year) params.set("year", String(year));
+  const query = params.toString();
+  return fetch(`${BASE}/${id}/agenda${query ? `?${query}` : ""}`).then((res) =>
+    asJson<AgendaEvent[]>(res)
+  );
+}
