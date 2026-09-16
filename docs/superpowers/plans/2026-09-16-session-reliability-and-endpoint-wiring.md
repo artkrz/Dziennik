@@ -980,7 +980,8 @@ that still works because the factory's parameter is optional.
 
 Run: `cd app/backend && npm test`
 Expected: the four `sessionsStore` tests and the three new `librusSessions`
-tests PASS; the two `isExpired` tests FAIL (removed in Task 5).
+tests PASS, and the suite is green — step 5b removed the two orphaned
+`isExpired` tests in this same task.
 
 - [ ] **Step 8: Commit**
 
@@ -1000,7 +1001,6 @@ git commit -m "feat(backend): persist Librus sessions encrypted in SQLite"
 - Modify: `lib/api.js` (`_request`, `looksLikeLoginPage`)
 - Modify: `app/backend/src/routes/timetable.js`
 - Modify: `app/backend/src/routes/messages.js`
-- Modify: `app/backend/test/librusSessions.test.js` (delete the two `isExpired` tests)
 
 **Interfaces:**
 - Consumes: Task 2's `LibrusSessionExpiredError` and `options.caller` seam.
@@ -1165,7 +1165,7 @@ Expected: PASS, 13 tests.
 - [ ] **Step 6: Run the backend tests**
 
 Run: `cd app/backend && npm test`
-Expected: PASS — everything green now that the `isExpired` tests are gone.
+Expected: PASS — the `isExpired` tests were already removed in Task 4.
 
 - [ ] **Step 7: Commit**
 
@@ -2295,10 +2295,10 @@ git commit -m "docs: document session persistence, typed errors and CACHE_TTL_MS
   signal → Task 5; captcha detection → Task 2; caching/rate limiting →
   Task 7; dead-code removal → Task 6; wiring the six unused capabilities →
   Tasks 8–9; smoke-test script → Task 1. Every spec section maps to a task.
-- **Known cross-task breakage (intentional, called out at the point it
-  happens):** Task 4 removes `withSession`'s `isExpired` parameter, so the two
-  tests covering it fail until Task 5 step 1 deletes them. Tasks 4 and 5 must
-  land together or in order; do not stop between them.
+- **Cross-task ordering:** Task 4 removes `withSession`'s `isExpired`
+  parameter and deletes the two tests covering it in the same diff (step 5b),
+  so every task ends on a green suite. Task 5 must still follow Task 4 — it
+  supplies the typed error that replaces the deleted behaviour.
 - **Type consistency:** `librusFactory` is called as `librusFactory({ session })`
   in Task 4 and as `librusFactory({})` for a fresh login; `routes/accounts.js`
   calls it as `librusFactory()`, which is why the parameter is optional and
