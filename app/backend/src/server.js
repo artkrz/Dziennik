@@ -3,6 +3,7 @@ const express = require("express");
 const { getEncryptionKey, encryptText, decryptText } = require("./crypto.js");
 const { createDb, makeAccountsStore, makeSessionsStore } = require("./db.js");
 const { createSessionManager } = require("./librusSessions.js");
+const { createCache } = require("./cache.js");
 const { createAccountsRouter } = require("./routes/accounts.js");
 const { createTimetableRouter } = require("./routes/timetable.js");
 const { createMessagesRouter } = require("./routes/messages.js");
@@ -16,6 +17,7 @@ process.on("unhandledRejection", (err) => {
 function createApp({
   dbPath = process.env.DB_PATH || "/data/accounts.db",
   librusFactory = (options) => new (require("../../../lib/api.js"))(undefined, options),
+  cacheTtlMs = Number(process.env.CACHE_TTL_MS) || 5 * 60 * 1000,
 } = {}) {
   getEncryptionKey();
 
@@ -30,6 +32,7 @@ function createApp({
     encryptText,
     decryptText,
   });
+  const cache = createCache({ ttlMs: cacheTtlMs });
 
   const app = express();
   app.use(express.json());
@@ -45,9 +48,9 @@ function createApp({
     createAccountsRouter({ accountsStore, encryptPassword: encryptText, sessionManager, librusFactory })
   );
 
-  app.use("/api/accounts", createTimetableRouter({ sessionManager }));
+  app.use("/api/accounts", createTimetableRouter({ sessionManager, cache }));
 
-  app.use("/api/accounts", createMessagesRouter({ sessionManager }));
+  app.use("/api/accounts", createMessagesRouter({ sessionManager, cache }));
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {

@@ -4,15 +4,15 @@ const config = require("../../../../lib/config.js");
 
 const RECEIVED = config.folder.RECEIVED;
 
-function createMessagesRouter({ sessionManager }) {
+function createMessagesRouter({ sessionManager, cache }) {
   const router = express.Router();
 
   router.get("/:id/messages", async (req, res) => {
     const accountId = Number(req.params.id);
 
     try {
-      const messages = await sessionManager.withSession(accountId, (client) =>
-        client.inbox.listInbox(RECEIVED)
+      const messages = await cache.fetch(`messages:${accountId}`, () =>
+        sessionManager.withSession(accountId, (client) => client.inbox.listInbox(RECEIVED))
       );
       res.json(messages);
     } catch (error) {

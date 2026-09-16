@@ -1,7 +1,7 @@
 "use strict";
 const express = require("express");
 
-function createTimetableRouter({ sessionManager }) {
+function createTimetableRouter({ sessionManager, cache }) {
   const router = express.Router();
 
   router.get("/:id/timetable", async (req, res) => {
@@ -9,8 +9,8 @@ function createTimetableRouter({ sessionManager }) {
     const { from, to } = req.query;
 
     try {
-      const timetable = await sessionManager.withSession(accountId, (client) =>
-        client.calendar.getTimetable(from, to)
+      const timetable = await cache.fetch(`timetable:${accountId}:${from || ""}:${to || ""}`, () =>
+        sessionManager.withSession(accountId, (client) => client.calendar.getTimetable(from, to))
       );
       res.json(timetable);
     } catch (error) {
