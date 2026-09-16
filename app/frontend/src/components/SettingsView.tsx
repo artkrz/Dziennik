@@ -4,7 +4,13 @@ import AddAccountForm from "./AddAccountForm";
 import EditAccountDialog from "./EditAccountDialog";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Button } from "./ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 
 export default function SettingsView({
   accounts,
@@ -81,6 +87,7 @@ export default function SettingsView({
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Dodaj dziecko</DialogTitle>
+            <DialogDescription>Podaj dane logowania do Synergii.</DialogDescription>
           </DialogHeader>
           <AddAccountForm onAdded={handleAdded} />
         </DialogContent>

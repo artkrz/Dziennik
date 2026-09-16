@@ -12,6 +12,16 @@ function startApp(librusFactory) {
   return { server, base: `http://127.0.0.1:${port}` };
 }
 
+async function createAccount(base) {
+  return (
+    await fetch(`${base}/api/accounts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label: "Jas", login: "jas", password: "pw" }),
+    })
+  ).json();
+}
+
 test("POST /api/accounts rejects invalid Librus credentials without saving", async () => {
   const { server, base } = startApp(() => ({
     authorize: async () => { throw new Error("bad login"); },
@@ -153,6 +163,8 @@ test("PATCH /api/accounts/:id with a new label renames the account", async () =>
       body: JSON.stringify({ label: "Jasiu" }),
     });
     assert.equal(patched.status, 200);
+    const patchedBody = await patched.json();
+    assert.deepEqual(Object.keys(patchedBody).sort(), ["id", "label", "login"]);
 
     const list = await (await fetch(`${base}/api/accounts`)).json();
     assert.deepEqual(list, [{ id: created.id, label: "Jasiu", login: "jas" }]);
@@ -183,15 +195,25 @@ test("PATCH /api/accounts/:id with no label returns 400", async () => {
   }
 });
 
-test("PATCH /api/accounts/:id for an unknown id returns 404", async () => {
+test("PATCH returns 404 for an unknown account and 200 for a known one", async () => {
   const { server, base } = startApp(() => ({ authorize: async () => {} }));
   try {
-    const res = await fetch(`${base}/api/accounts/999999`, {
+    const account = await createAccount(base);
+
+    const unknown = await fetch(`${base}/api/accounts/999999`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ label: "Ktoś" }),
+      body: JSON.stringify({ label: "Nieznany" }),
     });
-    assert.equal(res.status, 404);
+    assert.equal(unknown.status, 404);
+    assert.deepEqual(await unknown.json(), { error: "Account not found" });
+
+    const known = await fetch(`${base}/api/accounts/${account.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label: "Znany" }),
+    });
+    assert.equal(known.status, 200);
   } finally {
     server.close();
   }

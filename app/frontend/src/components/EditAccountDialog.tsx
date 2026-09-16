@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { Account, updateAccount } from "../api";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Button } from "./ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
@@ -49,6 +55,7 @@ export default function EditAccountDialog({
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Edytuj konto</DialogTitle>
+          <DialogDescription>Zmień etykietę lub hasło Synergia.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
