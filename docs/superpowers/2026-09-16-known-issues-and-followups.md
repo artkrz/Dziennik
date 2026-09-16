@@ -1,9 +1,9 @@
 # Known issues and follow-ups — 2026-09-16
 
 Carried out of the session that produced the
-[session reliability and endpoint wiring](plans/2026-09-16-session-reliability-and-endpoint-wiring.md)
-branch. Everything here was found by review, judged non-blocking, and
-deliberately not fixed. Nothing here blocks merge.
+[session reliability and endpoint wiring](specs/2026-09-16-session-reliability-and-endpoint-wiring-design.md)
+work. Everything here was found by review, judged non-blocking, and
+deliberately not fixed.
 
 ## Library bugs (pre-existing, not introduced by that branch)
 
