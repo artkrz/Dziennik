@@ -1,7 +1,13 @@
 # Session Reliability and Endpoint Wiring — Design
 
-**Status:** approved 2026-09-16
-**Plan:** [docs/superpowers/plans/2026-09-16-session-reliability-and-endpoint-wiring.md](../plans/2026-09-16-session-reliability-and-endpoint-wiring.md)
+**Status:** implemented 2026-09-16
+
+> The step-by-step implementation plan that accompanied this spec was removed
+> once the work shipped: it was a one-execution checklist, and parts of it were
+> overridden during implementation (notably the cache-key construction), so
+> keeping it would have documented decisions the code deliberately does not
+> follow. This spec records the reasoning, which outlives it; the code and its
+> commit messages record what was actually built.
 
 ## Problem
 

@@ -1,5 +1,8 @@
 node_modules/
 .*
+# Agent scratch: dispatch briefs and reports. Caught by `.*` above already,
+# but named explicitly so the intent is readable rather than incidental.
+.superpowers/
 !.gitignore
 !.prettierrc
 !.env.example
