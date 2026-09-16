@@ -30,3 +30,30 @@ test("importSession returns false for junk instead of throwing", () => {
   assert.equal(client.importSession(""), false);
   assert.equal(client.importSession(null), false);
 });
+
+test("a restored session builds the HTTP caller exactly once", async () => {
+  const source = new Librus(undefined, { caller: {} });
+  await source.cookie.setCookie("DZIENNIKSID=abc123; Path=/", "https://synergia.librus.pl");
+  const serialized = source.exportSession();
+
+  const original = Librus.prototype._initializeCaller;
+  let calls = 0;
+  Librus.prototype._initializeCaller = function (...args) {
+    calls += 1;
+    return original.apply(this, args);
+  };
+  try {
+    new Librus(undefined, { caller: {}, session: serialized });
+  } finally {
+    Librus.prototype._initializeCaller = original;
+  }
+
+  assert.equal(calls, 1);
+});
+
+test("an unusable session still leaves the client with a caller", async () => {
+  const client = new Librus(undefined, { caller: { marker: true }, session: "not json" });
+  assert.deepEqual(client.caller, { marker: true });
+  await client._callerReady;
+  assert.deepEqual(client.caller, { marker: true });
+});
