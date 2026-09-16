@@ -918,17 +918,34 @@ module.exports = { createSessionManager };
 ```
 
 Note the `isExpired` parameter is gone — Task 5 replaces it with a typed
-error raised at the source. The two existing tests that pass an `isExpired`
-callback (`"re-logs in and retries once when isExpired reports staleness"` and
-`"does not retry isExpired on a freshly-logged-in client"`) are deleted in
-Task 5, not here; until then they will fail. That is expected and Task 5's
-step 1 is to remove them.
+error raised at the source.
+
+- [ ] **Step 5b: Delete the two tests for the parameter this task removed**
+
+Remove these two tests from `app/backend/test/librusSessions.test.js`:
+`"withSession re-logs in and retries once when isExpired reports staleness"`
+and `"withSession does not retry isExpired on a freshly-logged-in client"`.
+They test a parameter this task deletes, so they belong in this task's diff —
+every task must end on a green suite. The behaviour they covered becomes
+Task 5's typed error plus the surviving
+`"re-logs in and retries once when fn throws on a cached client"` test.
 
 - [ ] **Step 6: Wire the store in `server.js`**
 
 ```js
 const { getEncryptionKey, encryptText, decryptText } = require("./crypto.js");
 const { createDb, makeAccountsStore, makeSessionsStore } = require("./db.js");
+```
+
+**The default `librusFactory` must forward its options**, or a restored jar is
+silently dropped and session persistence becomes a no-op in production — the
+tests cannot catch this because they all inject stubs:
+
+```js
+function createApp({
+  dbPath = process.env.DB_PATH || "/data/accounts.db",
+  librusFactory = (options) => new (require("../../../lib/api.js"))(undefined, options),
+} = {}) {
 ```
 
 ```js
@@ -992,15 +1009,7 @@ git commit -m "feat(backend): persist Librus sessions encrypted in SQLite"
   parsed login page, which Task 4's `withSession` catch-and-retry already
   handles for every route at once.
 
-- [ ] **Step 1: Delete the obsolete tests**
-
-Remove these two tests from `app/backend/test/librusSessions.test.js`:
-`"withSession re-logs in and retries once when isExpired reports staleness"`
-and `"withSession does not retry isExpired on a freshly-logged-in client"`.
-The behaviour they covered is now Task 5's typed error plus the existing
-`"re-logs in and retries once when fn throws on a cached client"` test.
-
-- [ ] **Step 2: Write the failing test**
+- [ ] **Step 1: Write the failing test**
 
 `test/request.test.js`:
 
@@ -1058,14 +1067,15 @@ test("looksLikeLoginPage ignores a page that merely mentions logging in", () => 
 });
 ```
 
-- [ ] **Step 3: Run to verify failure**
+- [ ] **Step 2: Run to verify failure**
 
 Run: `npm test`
 Expected: FAIL — `Librus.looksLikeLoginPage is not a function`.
 
-- [ ] **Step 4: Implement in `lib/api.js`**
+- [ ] **Step 3: Implement in `lib/api.js`**
 
-Add to the requires:
+**Replace** the `require("./errors.js")` line Task 2 added (do not add a
+second destructuring require of the same module):
 
 ```js
 const { LibrusAuthError, LibrusCaptchaError, LibrusSessionExpiredError } = require("./errors.js");
@@ -1123,12 +1133,12 @@ Replace `_request`:
   }
 ```
 
-- [ ] **Step 5: Run the library tests**
+- [ ] **Step 4: Run the library tests**
 
 Run: `npm test`
 Expected: PASS, 13 tests.
 
-- [ ] **Step 6: Drop the payload heuristics from the routes**
+- [ ] **Step 5: Drop the payload heuristics from the routes**
 
 `app/backend/src/routes/timetable.js` — the third argument goes away:
 
@@ -1152,12 +1162,12 @@ Expected: PASS, 13 tests.
       );
 ```
 
-- [ ] **Step 7: Run the backend tests**
+- [ ] **Step 6: Run the backend tests**
 
 Run: `cd app/backend && npm test`
 Expected: PASS — everything green now that the `isExpired` tests are gone.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add lib/api.js test/request.test.js app/backend/src/routes/timetable.js \
@@ -2186,11 +2196,14 @@ In `AppDock.tsx`, extend the exported type and add two items to the existing
 export type View = "calendar" | "messages" | "grades" | "agenda" | "add";
 ```
 
-Import `GraduationCap` and `CalendarClock` from `lucide-react` and add:
+Import `GraduationCap` and `CalendarClock` from `lucide-react` and add two
+entries to the `ITEMS` array (`app/frontend/src/components/AppDock.tsx:14`),
+between the `messages` and `add` entries. Note the key is `Icon`, capitalized,
+matching the existing `DockItem` type at line 11:
 
 ```tsx
-  { view: "grades", label: "Oceny", icon: GraduationCap },
-  { view: "agenda", label: "Terminarz", icon: CalendarClock },
+  { view: "grades", label: "Oceny", Icon: GraduationCap },
+  { view: "agenda", label: "Terminarz", Icon: CalendarClock },
 ```
 
 - [ ] **Step 6: Render the new views in `App.tsx`**
