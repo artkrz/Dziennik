@@ -20,8 +20,8 @@ function createAgendaRouter({ sessionManager, cache }) {
     if (Number.isNaN(month) || (month !== null && (month < 1 || month > 12))) {
       return res.status(400).json({ error: "month must be an integer between 1 and 12" });
     }
-    if (Number.isNaN(year)) {
-      return res.status(400).json({ error: "year must be an integer" });
+    if (Number.isNaN(year) || (year !== null && (year < 2000 || year > 2100))) {
+      return res.status(400).json({ error: "year must be an integer between 2000 and 2100" });
     }
 
     try {
