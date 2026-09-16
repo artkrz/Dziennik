@@ -32,6 +32,10 @@ function makeAccountsStore(db) {
     "SELECT id, label, login, password_encrypted FROM accounts WHERE id = ?"
   );
   const deleteStmt = db.prepare("DELETE FROM accounts WHERE id = ?");
+  const updateWithPasswordStmt = db.prepare(
+    "UPDATE accounts SET label = ?, password_encrypted = ? WHERE id = ?"
+  );
+  const updateLabelStmt = db.prepare("UPDATE accounts SET label = ? WHERE id = ?");
 
   return {
     insert(label, login, passwordEncrypted) {
@@ -46,6 +50,12 @@ function makeAccountsStore(db) {
     },
     remove(id) {
       deleteStmt.run(id);
+    },
+    update(id, label, passwordEncrypted) {
+      const info = passwordEncrypted
+        ? updateWithPasswordStmt.run(label, passwordEncrypted, id)
+        : updateLabelStmt.run(label, id);
+      return info.changes > 0;
     },
   };
 }

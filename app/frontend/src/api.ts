@@ -38,6 +38,14 @@ export function addAccount(label: string, login: string, password: string): Prom
   }).then((res) => asJson<Account>(res));
 }
 
+export function updateAccount(id: number, label: string, password?: string): Promise<Account> {
+  return fetch(`${BASE}/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(password ? { label, password } : { label }),
+  }).then((res) => asJson<Account>(res));
+}
+
 export async function deleteAccount(id: number): Promise<void> {
   const res = await fetch(`${BASE}/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error(`Failed to delete account ${id}`);
