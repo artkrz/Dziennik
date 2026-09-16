@@ -47,3 +47,17 @@ test("authorize resolves with cookies on the happy path", async () => {
 test("detectsCaptcha ignores an ordinary success payload", () => {
   assert.equal(Librus.detectsCaptcha({ goTo: "/OAuth/Authorization?client_id=46" }), false);
 });
+
+test("authorize does not mistake a success payload mentioning captcha for a challenge", async () => {
+  const client = new Librus(undefined, {
+    caller: stubCaller({
+      postFormData: {
+        goTo: "/OAuth/Authorization?client_id=46&response_type=code&scope=mydata",
+        "g-recaptcha-response": "",
+        captchaRequired: false,
+      },
+    }),
+  });
+  const cookies = await client.authorize("user", "pass");
+  assert.ok(Array.isArray(cookies));
+});
