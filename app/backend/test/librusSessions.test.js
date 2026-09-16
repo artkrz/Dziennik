@@ -143,3 +143,27 @@ test("withSession falls back to a fresh login when the stored jar is unusable", 
 
   assert.equal(authorizeCalls, 1);
 });
+
+test("withSession retries with a fresh login when the restored jar turns out to be stale", async () => {
+  let authorizeCalls = 0;
+  const client = { authorize: async () => { authorizeCalls += 1; }, exportSession: () => "fresh-jar" };
+  const manager = createSessionManager({
+    accountsStore: stubAccountsStore({ id: 1, login: "u", password_encrypted: Buffer.from("x") }),
+    decryptPassword: () => "plain-pass",
+    librusFactory: () => client,
+    sessionsStore: { save() {}, load: () => Buffer.from("blob"), remove() {} },
+    encryptText: (text) => Buffer.from(text),
+    decryptText: () => "stale-jar",
+  });
+
+  let calls = 0;
+  const result = await manager.withSession(1, async () => {
+    calls += 1;
+    if (calls === 1) throw new Error("session expired");
+    return "recovered";
+  });
+
+  assert.equal(result, "recovered");
+  assert.equal(calls, 2);
+  assert.equal(authorizeCalls, 1);
+});

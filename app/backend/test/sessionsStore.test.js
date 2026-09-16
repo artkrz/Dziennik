@@ -30,3 +30,14 @@ test("remove deletes the row", () => {
   store.remove(1);
   assert.equal(store.load(1), undefined);
 });
+
+test("a real encrypted jar survives save, load and decrypt", () => {
+  process.env.ACCOUNTS_ENC_KEY = require("node:crypto").randomBytes(32).toString("base64");
+  const { encryptText, decryptText } = require("../src/crypto.js");
+  const store = freshStore();
+  const jar = JSON.stringify({ cookies: [{ key: "DZIENNIKSID", value: "abc123" }] });
+
+  store.save(1, encryptText(jar));
+
+  assert.equal(decryptText(Buffer.from(store.load(1))), jar);
+});

@@ -8,7 +8,8 @@ function createSessionManager({
   encryptText,
   decryptText,
 }) {
-  const factory = librusFactory || (() => new (require("../../../lib/api.js"))());
+  const factory =
+    librusFactory || ((options) => new (require("../../../lib/api.js"))(undefined, options));
   const clients = new Map();
   const pendingLogins = new Map();
 

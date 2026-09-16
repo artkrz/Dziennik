@@ -8,7 +8,9 @@ const { createTimetableRouter } = require("./routes/timetable.js");
 const { createMessagesRouter } = require("./routes/messages.js");
 
 process.on("unhandledRejection", (err) => {
-  console.error("Unhandled rejection:", err);
+  // Only err.message - a raw AxiosError carries the plaintext Librus
+  // password in error.config.data.
+  console.error("Unhandled rejection: %s", err?.message || err);
 });
 
 function createApp({
