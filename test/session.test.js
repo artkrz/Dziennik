@@ -93,3 +93,25 @@ test("_request waits for the real caller instead of dereferencing undefined", as
   const cookies = await client.cookie.getCookies("https://api.librus.pl");
   assert.ok(cookies.map((c) => c.key).includes("DeviceCookie"));
 });
+
+test("hasLiveSession is false once the session cookie has expired", async () => {
+  const client = new Librus(undefined, { caller: {} });
+  await client.cookie.setCookie(
+    "oauth_token=abc; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+    "https://synergia.librus.pl"
+  );
+  assert.equal(await client.hasLiveSession(), false);
+});
+
+test("hasLiveSession is true while the session cookie is alive", async () => {
+  const client = new Librus(undefined, { caller: {} });
+  await client.cookie.setCookie("oauth_token=abc; Path=/", "https://synergia.librus.pl");
+  assert.equal(await client.hasLiveSession(), true);
+});
+
+test("a jar with only long-lived cookies is not a live session", async () => {
+  const client = new Librus(undefined, { caller: {} });
+  await client.cookie.setCookie("DZIENNIKSID=x; Path=/", "https://synergia.librus.pl");
+  await client.cookie.setCookie("DeviceCookie=y; Path=/", "https://api.librus.pl");
+  assert.equal(await client.hasLiveSession(), false);
+});

@@ -48,11 +48,16 @@ function createSessionManager({
     }
   }
 
-  /** Build a client from the stored jar without hitting Librus. */
-  function adopt(accountId) {
+  /** Build a client from the stored jar, but only if it can still fetch. */
+  async function adopt(accountId) {
     const session = restoreSession(accountId);
     if (!session) return undefined;
     const client = factory({ session });
+    if (typeof client.hasLiveSession === "function" && !(await client.hasLiveSession())) {
+      // The jar deserialized fine but its session cookie has expired. Fall
+      // through to login(), which reuses this same jar for its DeviceCookie.
+      return undefined;
+    }
     clients.set(accountId, client);
     return client;
   }
@@ -68,7 +73,10 @@ function createSessionManager({
         throw new Error(`Unknown account ${accountId}`);
       }
       const password = decryptPassword(account.password_encrypted);
-      const client = factory({});
+      // Reuse the stored jar even though we are logging in: its session
+      // cookie is long dead, but the ~1 year DeviceCookie it carries is what
+      // keeps logins free of a captcha challenge.
+      const client = factory({ session: restoreSession(accountId) });
       await client.authorize(account.login, password);
       if (generationOf(accountId) !== generation) {
         // forget() ran while this login was in flight - do not resurrect
@@ -92,10 +100,17 @@ function createSessionManager({
     let client = clients.get(accountId);
     let fresh = false;
 
+    if (client && typeof client.hasLiveSession === "function" && !(await client.hasLiveSession())) {
+      // Cached clients outlive their ~10 minute session cookie; without this
+      // every later request quietly returns empty data instead of re-logging in.
+      clients.delete(accountId);
+      client = undefined;
+    }
+
     if (!client) {
       // A restored jar is unproven: if it turns out to be stale, the catch
       // below logs in for real and retries exactly once.
-      client = adopt(accountId);
+      client = await adopt(accountId);
     }
     if (!client) {
       client = await login(accountId);

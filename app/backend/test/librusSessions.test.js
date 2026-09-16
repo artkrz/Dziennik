@@ -302,3 +302,82 @@ test("an abandoned login settling after forget() does not evict a newer pending 
 
   assert.equal(authorizeCalls, 2);
 });
+
+test("a stored jar whose session has expired is not adopted, and login reuses it", async () => {
+  let authorizeCalls = 0;
+  const seenSessions = [];
+  const manager = createSessionManager({
+    accountsStore: stubAccountsStore({ id: 1, login: "u", password_encrypted: Buffer.from("x") }),
+    decryptPassword: () => "plain-pass",
+    librusFactory: ({ session } = {}) => {
+      seenSessions.push(session);
+      return {
+        authorize: async () => {
+          authorizeCalls += 1;
+        },
+        hasLiveSession: async () => false,
+        exportSession: () => "fresh-jar",
+      };
+    },
+    sessionsStore: { save() {}, load: () => Buffer.from("blob"), remove() {} },
+    encryptText: (text) => Buffer.from(text),
+    decryptText: () => "stale-jar",
+  });
+
+  const result = await manager.withSession(1, async () => "ok");
+
+  assert.equal(result, "ok");
+  assert.equal(authorizeCalls, 1);
+  // Both the rejected adopt and the login saw the stored jar - the login must
+  // carry it so the DeviceCookie survives.
+  assert.deepEqual(seenSessions, ["stale-jar", "stale-jar"]);
+});
+
+test("a stored jar with a live session is adopted without logging in", async () => {
+  let authorizeCalls = 0;
+  const manager = createSessionManager({
+    accountsStore: stubAccountsStore({ id: 1, login: "u", password_encrypted: Buffer.from("x") }),
+    decryptPassword: () => "plain-pass",
+    librusFactory: () => ({
+      authorize: async () => {
+        authorizeCalls += 1;
+      },
+      hasLiveSession: async () => true,
+    }),
+    sessionsStore: { save() {}, load: () => Buffer.from("blob"), remove() {} },
+    encryptText: (text) => Buffer.from(text),
+    decryptText: () => "live-jar",
+  });
+
+  await manager.withSession(1, async () => "ok");
+
+  assert.equal(authorizeCalls, 0);
+});
+
+test("a cached client whose session expires is discarded and replaced by a login", async () => {
+  let authorizeCalls = 0;
+  let live = true;
+  const client = {
+    authorize: async () => {
+      authorizeCalls += 1;
+    },
+    hasLiveSession: async () => live,
+    exportSession: () => "jar",
+  };
+  const manager = createSessionManager({
+    accountsStore: stubAccountsStore({ id: 1, login: "u", password_encrypted: Buffer.from("x") }),
+    decryptPassword: () => "plain-pass",
+    librusFactory: () => client,
+    sessionsStore: { save() {}, load: () => undefined, remove() {} },
+    encryptText: (text) => Buffer.from(text),
+    decryptText: () => "",
+  });
+
+  await manager.withSession(1, async () => "first");
+  assert.equal(authorizeCalls, 1);
+
+  live = false; // the session cookie expires between requests
+  await manager.withSession(1, async () => "second");
+
+  assert.equal(authorizeCalls, 2);
+});
