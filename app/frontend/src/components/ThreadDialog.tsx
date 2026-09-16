@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { getMessage, MessageDetail, MessageThread, ThreadMessage } from "../api";
 import { Alert, AlertDescription } from "./ui/alert";
-import { Button } from "./ui/button";
 import { Bubble, BubbleContent, BubbleGroup } from "./ui/bubble";
 import {
   Dialog,
@@ -38,8 +37,12 @@ function ThreadBubble({
     <Bubble align={align} variant={variant}>
       <BubbleContent>
         <div className="flex flex-col gap-0.5">
-          <span className="text-xs text-muted-foreground">
-            {message.user} · {message.date}
+          {/* Inherit the bubble's own foreground rather than a fixed token:
+              the two variants sit on opposite backgrounds, so anything
+              absolute (text-muted-foreground, text-primary) is unreadable on
+              one side of the conversation in one theme or the other. */}
+          <span className="text-xs opacity-70">
+            {message.user || "Ja"} · {message.date}
           </span>
           {detail && <p className="text-sm whitespace-pre-wrap">{detail.content}</p>}
           {error && (
@@ -48,16 +51,14 @@ function ThreadBubble({
             </Alert>
           )}
           {!detail && !error && (
-            <Button
+            <button
               type="button"
-              variant="link"
-              size="sm"
-              className="h-auto self-start px-0"
+              className="self-start text-xs underline underline-offset-4 opacity-80 transition-opacity hover:opacity-100 disabled:opacity-50"
               disabled={loading}
               onClick={onLoad}
             >
               {loading ? "Wczytywanie…" : "Pokaż treść"}
-            </Button>
+            </button>
           )}
         </div>
       </BubbleContent>
