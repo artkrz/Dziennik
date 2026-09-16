@@ -11,10 +11,8 @@ function createMessagesRouter({ sessionManager }) {
     const accountId = Number(req.params.id);
 
     try {
-      const messages = await sessionManager.withSession(
-        accountId,
-        (client) => client.inbox.listInbox(RECEIVED),
-        (result) => Array.isArray(result) && result.length === 0
+      const messages = await sessionManager.withSession(accountId, (client) =>
+        client.inbox.listInbox(RECEIVED)
       );
       res.json(messages);
     } catch (error) {
@@ -33,10 +31,8 @@ function createMessagesRouter({ sessionManager }) {
     }
 
     try {
-      const message = await sessionManager.withSession(
-        accountId,
-        (client) => client.inbox.getMessage(RECEIVED, messageId),
-        (result) => !result
+      const message = await sessionManager.withSession(accountId, (client) =>
+        client.inbox.getMessage(RECEIVED, messageId)
       );
 
       if (!message) {

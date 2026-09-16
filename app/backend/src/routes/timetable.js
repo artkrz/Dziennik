@@ -9,10 +9,8 @@ function createTimetableRouter({ sessionManager }) {
     const { from, to } = req.query;
 
     try {
-      const timetable = await sessionManager.withSession(
-        accountId,
-        (client) => client.calendar.getTimetable(from, to),
-        (result) => Array.isArray(result?.hours) && result.hours.length === 0
+      const timetable = await sessionManager.withSession(accountId, (client) =>
+        client.calendar.getTimetable(from, to)
       );
       res.json(timetable);
     } catch (error) {
