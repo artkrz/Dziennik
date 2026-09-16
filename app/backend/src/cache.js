@@ -50,4 +50,16 @@ function createCache({ ttlMs = 5 * 60 * 1000, now = Date.now } = {}) {
   return { fetch, invalidate, clear };
 }
 
-module.exports = { createCache };
+/**
+ * Build an unambiguous cache key from a prefix and any number of parts.
+ *
+ * Plain interpolation with a ":" separator collides whenever a value can
+ * itself contain ":" - `from="a:b", to="c"` and `from="a", to="b:c"` both
+ * produce "timetable:1:a:b:c". JSON encoding the parts removes the
+ * ambiguity without constraining what a caller may pass.
+ */
+function cacheKey(prefix, ...parts) {
+  return `${prefix}:${JSON.stringify(parts)}`;
+}
+
+module.exports = { createCache, cacheKey };

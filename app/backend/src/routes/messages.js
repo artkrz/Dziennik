@@ -1,6 +1,7 @@
 "use strict";
 const express = require("express");
 const config = require("../../../../lib/config.js");
+const { cacheKey } = require("../cache.js");
 
 const RECEIVED = config.folder.RECEIVED;
 
@@ -11,7 +12,7 @@ function createMessagesRouter({ sessionManager, cache }) {
     const accountId = Number(req.params.id);
 
     try {
-      const messages = await cache.fetch(`messages:${accountId}`, () =>
+      const messages = await cache.fetch(cacheKey("messages", accountId), () =>
         sessionManager.withSession(accountId, (client) => client.inbox.listInbox(RECEIVED))
       );
       res.json(messages);

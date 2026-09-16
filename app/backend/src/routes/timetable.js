@@ -1,5 +1,6 @@
 "use strict";
 const express = require("express");
+const { cacheKey } = require("../cache.js");
 
 function createTimetableRouter({ sessionManager, cache }) {
   const router = express.Router();
@@ -9,7 +10,7 @@ function createTimetableRouter({ sessionManager, cache }) {
     const { from, to } = req.query;
 
     try {
-      const timetable = await cache.fetch(`timetable:${accountId}:${from || ""}:${to || ""}`, () =>
+      const timetable = await cache.fetch(cacheKey("timetable", accountId, from, to), () =>
         sessionManager.withSession(accountId, (client) => client.calendar.getTimetable(from, to))
       );
       res.json(timetable);

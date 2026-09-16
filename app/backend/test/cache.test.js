@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { createCache } = require("../src/cache.js");
+const { createCache, cacheKey } = require("../src/cache.js");
 
 test("fetch caches a resolved value for the TTL", async () => {
   let calls = 0;
@@ -55,4 +55,20 @@ test("keys are independent and invalidate drops just one", async () => {
   cache.invalidate("a");
   assert.equal(await cache.fetch("a", async () => "A2"), "A2");
   assert.equal(await cache.fetch("b", async () => "B2"), "B");
+});
+
+test("cacheKey does not collide when a value contains the separator", () => {
+  assert.notEqual(
+    cacheKey("timetable", 1, "a:b", "c"),
+    cacheKey("timetable", 1, "a", "b:c")
+  );
+});
+
+test("cacheKey distinguishes an absent part from an empty string", () => {
+  assert.notEqual(cacheKey("timetable", 1, undefined), cacheKey("timetable", 1, ""));
+});
+
+test("cacheKey is stable for identical inputs", () => {
+  assert.equal(cacheKey("timetable", 1, "2026-09-14", "2026-09-20"),
+               cacheKey("timetable", 1, "2026-09-14", "2026-09-20"));
 });
