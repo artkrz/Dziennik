@@ -15,6 +15,7 @@ export default function AgendaCard({ account }: { account: Account }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setError(null);
     getAgenda(account.id)
       .then(setEvents)
       .catch((err) => setError(err instanceof Error ? err.message : "Błąd pobierania terminarza"));

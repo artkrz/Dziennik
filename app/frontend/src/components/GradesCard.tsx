@@ -15,6 +15,7 @@ export default function GradesCard({ account }: { account: Account }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setError(null);
     getGrades(account.id)
       .then(setSubjects)
       .catch((err) => setError(err instanceof Error ? err.message : "Błąd pobierania ocen"));

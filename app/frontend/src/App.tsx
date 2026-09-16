@@ -77,24 +77,34 @@ export default function App() {
           </BentoGrid>
         ))}
 
-      {view === "grades" && accounts.length > 0 && (
-        <BentoGrid className="grid-cols-1 auto-rows-auto md:grid-cols-2 xl:grid-cols-3">
-          {accounts.map((account) => (
-            <GradesCard key={account.id} account={account} />
-          ))}
-          {accounts.map((account) => (
-            <AbsencesCard key={`abs-${account.id}`} account={account} />
-          ))}
-        </BentoGrid>
-      )}
+      {view === "grades" &&
+        (accounts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Dodaj pierwsze konto Librus, żeby zobaczyć oceny.
+          </p>
+        ) : (
+          <BentoGrid className="grid-cols-1 auto-rows-auto md:grid-cols-2 xl:grid-cols-3">
+            {accounts.map((account) => (
+              <GradesCard key={account.id} account={account} />
+            ))}
+            {accounts.map((account) => (
+              <AbsencesCard key={`abs-${account.id}`} account={account} />
+            ))}
+          </BentoGrid>
+        ))}
 
-      {view === "agenda" && accounts.length > 0 && (
-        <BentoGrid className="grid-cols-1 auto-rows-auto md:grid-cols-2 xl:grid-cols-3">
-          {accounts.map((account) => (
-            <AgendaCard key={account.id} account={account} />
-          ))}
-        </BentoGrid>
-      )}
+      {view === "agenda" &&
+        (accounts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Dodaj pierwsze konto Librus, żeby zobaczyć terminarz.
+          </p>
+        ) : (
+          <BentoGrid className="grid-cols-1 auto-rows-auto md:grid-cols-2 xl:grid-cols-3">
+            {accounts.map((account) => (
+              <AgendaCard key={account.id} account={account} />
+            ))}
+          </BentoGrid>
+        ))}
 
       <AppDock view={view} onChange={setView} />
     </main>

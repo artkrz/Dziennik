@@ -17,6 +17,7 @@ export default function AbsencesCard({ account }: { account: Account }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setError(null);
     getAbsences(account.id)
       .then(setData)
       .catch((err) => setError(err instanceof Error ? err.message : "Błąd pobierania frekwencji"));
