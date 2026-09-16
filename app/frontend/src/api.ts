@@ -129,3 +129,20 @@ export function getAgenda(id: number, month?: number, year?: number): Promise<Ag
     asJson<AgendaEvent[]>(res)
   );
 }
+
+export interface AgendaEventDetail {
+  lesson?: string;
+  date?: string;
+  lessonNumber?: string;
+  teacher?: string;
+  type?: string;
+  subject?: string;
+  room?: string;
+  description?: string;
+  added?: string;
+  timespan?: string;
+}
+
+export function getAgendaEvent(id: number, eventId: number): Promise<AgendaEventDetail> {
+  return fetch(`${BASE}/${id}/agenda/${eventId}`).then((res) => asJson<AgendaEventDetail>(res));
+}

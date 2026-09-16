@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Account, AgendaEvent, getAgenda } from "../api";
+import AgendaEventDialog from "./AgendaEventDialog";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
@@ -13,6 +14,7 @@ export function upcoming(events: AgendaEvent[], today: string): AgendaEvent[] {
 export default function AgendaCard({ account }: { account: Account }) {
   const [events, setEvents] = useState<AgendaEvent[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<AgendaEvent | null>(null);
 
   useEffect(() => {
     setError(null);
@@ -44,10 +46,28 @@ export default function AgendaCard({ account }: { account: Account }) {
             {list.map((event) => (
               <li key={`${event.day}-${event.id}-${event.title}`} className="text-sm">
                 <span className="text-muted-foreground tabular-nums">{event.day}</span>
-                <span className="ml-2">{event.title}</span>
+                {event.id > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setSelected(event)}
+                    className="ml-2 text-left underline-offset-2 hover:underline"
+                  >
+                    {event.title}
+                  </button>
+                ) : (
+                  <span className="ml-2">{event.title}</span>
+                )}
               </li>
             ))}
           </ul>
+        )}
+        {selected && (
+          <AgendaEventDialog
+            accountId={account.id}
+            event={selected}
+            open={selected !== null}
+            onOpenChange={(open) => !open && setSelected(null)}
+          />
         )}
       </CardContent>
     </Card>

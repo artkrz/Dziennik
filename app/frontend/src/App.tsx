@@ -38,7 +38,7 @@ export default function App() {
 
   return (
     <main className="flex flex-col gap-4 pb-28">
-      <h1 className="font-heading text-2xl font-medium">Plan lekcji Librus</h1>
+      <h1 className="font-heading text-2xl font-medium">Librus</h1>
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -87,8 +87,18 @@ export default function App() {
             {accounts.map((account) => (
               <GradesCard key={account.id} account={account} />
             ))}
+          </BentoGrid>
+        ))}
+
+      {view === "absences" &&
+        (accounts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Dodaj pierwsze konto Librus, żeby zobaczyć frekwencję.
+          </p>
+        ) : (
+          <BentoGrid className="grid-cols-1 auto-rows-auto md:grid-cols-2 xl:grid-cols-3">
             {accounts.map((account) => (
-              <AbsencesCard key={`abs-${account.id}`} account={account} />
+              <AbsencesCard key={account.id} account={account} />
             ))}
           </BentoGrid>
         ))}

@@ -10,6 +10,7 @@ const { createMessagesRouter } = require("./routes/messages.js");
 const { createGradesRouter } = require("./routes/grades.js");
 const { createAbsencesRouter } = require("./routes/absences.js");
 const { createAgendaRouter } = require("./routes/agenda.js");
+const { createAgendaEventRouter } = require("./routes/agendaEvent.js");
 const { createHomeworkRouter } = require("./routes/homework.js");
 const { createInfoRouter } = require("./routes/info.js");
 
@@ -62,6 +63,8 @@ function createApp({
   app.use("/api/accounts", createAbsencesRouter({ sessionManager, cache }));
 
   app.use("/api/accounts", createAgendaRouter({ sessionManager, cache }));
+
+  app.use("/api/accounts", createAgendaEventRouter({ sessionManager, cache }));
 
   app.use("/api/accounts", createHomeworkRouter({ sessionManager, cache }));
 
