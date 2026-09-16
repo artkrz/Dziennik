@@ -81,8 +81,34 @@ export function listMessages(id: number): Promise<Message[]> {
   return fetch(`${BASE}/${id}/messages`).then((res) => asJson<Message[]>(res));
 }
 
-export function getMessage(id: number, messageId: number): Promise<MessageDetail> {
-  return fetch(`${BASE}/${id}/messages/${messageId}`).then((res) => asJson<MessageDetail>(res));
+export function getMessage(
+  id: number,
+  messageId: number,
+  folder?: "sent"
+): Promise<MessageDetail> {
+  const query = folder ? `?folder=${folder}` : "";
+  return fetch(`${BASE}/${id}/messages/${messageId}${query}`).then((res) =>
+    asJson<MessageDetail>(res)
+  );
+}
+
+export interface ThreadMessage extends Message {
+  folder: "received" | "sent";
+  direction: "in" | "out";
+}
+
+export interface MessageThread {
+  key: string;
+  subject: string;
+  participants: string[];
+  messageCount: number;
+  lastDate: string;
+  unread: boolean;
+  messages: ThreadMessage[];
+}
+
+export function listThreads(id: number): Promise<MessageThread[]> {
+  return fetch(`${BASE}/${id}/threads`).then((res) => asJson<MessageThread[]>(res));
 }
 
 export interface SubjectGrade {
