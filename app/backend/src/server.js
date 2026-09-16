@@ -1,7 +1,7 @@
 "use strict";
 const express = require("express");
-const { getEncryptionKey, encryptPassword, decryptPassword } = require("./crypto.js");
-const { createDb, makeAccountsStore } = require("./db.js");
+const { getEncryptionKey, encryptText, decryptText } = require("./crypto.js");
+const { createDb, makeAccountsStore, makeSessionsStore } = require("./db.js");
 const { createSessionManager } = require("./librusSessions.js");
 const { createAccountsRouter } = require("./routes/accounts.js");
 const { createTimetableRouter } = require("./routes/timetable.js");
@@ -13,13 +13,21 @@ process.on("unhandledRejection", (err) => {
 
 function createApp({
   dbPath = process.env.DB_PATH || "/data/accounts.db",
-  librusFactory = () => new (require("../../../lib/api.js"))(),
+  librusFactory = (options) => new (require("../../../lib/api.js"))(undefined, options),
 } = {}) {
   getEncryptionKey();
 
   const db = createDb(dbPath);
   const accountsStore = makeAccountsStore(db);
-  const sessionManager = createSessionManager({ accountsStore, decryptPassword, librusFactory });
+  const sessionsStore = makeSessionsStore(db);
+  const sessionManager = createSessionManager({
+    accountsStore,
+    decryptPassword: decryptText,
+    librusFactory,
+    sessionsStore,
+    encryptText,
+    decryptText,
+  });
 
   const app = express();
   app.use(express.json());
@@ -32,7 +40,7 @@ function createApp({
 
   app.use(
     "/api/accounts",
-    createAccountsRouter({ accountsStore, encryptPassword, sessionManager, librusFactory })
+    createAccountsRouter({ accountsStore, encryptPassword: encryptText, sessionManager, librusFactory })
   );
 
   app.use("/api/accounts", createTimetableRouter({ sessionManager }));

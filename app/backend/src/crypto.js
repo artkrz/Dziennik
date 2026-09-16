@@ -15,7 +15,7 @@ function getEncryptionKey() {
   return buf;
 }
 
-function encryptPassword(plainText) {
+function encryptText(plainText) {
   const key = getEncryptionKey();
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
@@ -24,7 +24,7 @@ function encryptPassword(plainText) {
   return Buffer.concat([iv, authTag, encrypted]);
 }
 
-function decryptPassword(blob) {
+function decryptText(blob) {
   const key = getEncryptionKey();
   const iv = blob.subarray(0, 12);
   const authTag = blob.subarray(12, 28);
@@ -34,4 +34,11 @@ function decryptPassword(blob) {
   return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
 }
 
-module.exports = { encryptPassword, decryptPassword, getEncryptionKey };
+module.exports = {
+  encryptText,
+  decryptText,
+  // Kept for existing callers - a password is just text to this module.
+  encryptPassword: encryptText,
+  decryptPassword: decryptText,
+  getEncryptionKey,
+};

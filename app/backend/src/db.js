@@ -13,6 +13,13 @@ function createDb(dbPath) {
       created_at TEXT NOT NULL
     )
   `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      account_id INTEGER PRIMARY KEY,
+      session_encrypted BLOB NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
   return db;
 }
 
@@ -43,4 +50,28 @@ function makeAccountsStore(db) {
   };
 }
 
-module.exports = { createDb, makeAccountsStore };
+function makeSessionsStore(db) {
+  const saveStmt = db.prepare(
+    `INSERT INTO sessions (account_id, session_encrypted, updated_at)
+     VALUES (?, ?, ?)
+     ON CONFLICT(account_id) DO UPDATE SET
+       session_encrypted = excluded.session_encrypted,
+       updated_at = excluded.updated_at`
+  );
+  const loadStmt = db.prepare("SELECT session_encrypted FROM sessions WHERE account_id = ?");
+  const removeStmt = db.prepare("DELETE FROM sessions WHERE account_id = ?");
+
+  return {
+    save(accountId, blob) {
+      saveStmt.run(accountId, blob, new Date().toISOString());
+    },
+    load(accountId) {
+      return loadStmt.get(accountId)?.session_encrypted;
+    },
+    remove(accountId) {
+      removeStmt.run(accountId);
+    },
+  };
+}
+
+module.exports = { createDb, makeAccountsStore, makeSessionsStore };
