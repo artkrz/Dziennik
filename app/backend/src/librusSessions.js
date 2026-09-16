@@ -81,7 +81,11 @@ function createSessionManager({
     })();
 
     pendingLogins.set(accountId, attempt);
-    return attempt.finally(() => pendingLogins.delete(accountId));
+    return attempt.finally(() => {
+      // Delete by identity, not by key: forget() may have cleared this entry
+      // and a newer login may already own the slot.
+      if (pendingLogins.get(accountId) === attempt) pendingLogins.delete(accountId);
+    });
   }
 
   async function withSession(accountId, fn) {

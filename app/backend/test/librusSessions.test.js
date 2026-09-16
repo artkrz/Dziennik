@@ -244,3 +244,61 @@ test("forget clears the pending login so a concurrent request starts a new one",
   // Only the login that started after forget() persisted a jar.
   assert.deepEqual(saved, [[1, "fresh-jar"]]);
 });
+
+test("an abandoned login settling after forget() does not evict a newer pending login", async () => {
+  const saved = [];
+  let releaseA;
+  let releaseRest;
+  const gateA = new Promise((resolve) => { releaseA = resolve; });
+  const gateRest = new Promise((resolve) => { releaseRest = resolve; });
+  let authorizeCalls = 0;
+
+  const manager = createSessionManager({
+    accountsStore: stubAccountsStore({ id: 1, login: "u", password_encrypted: Buffer.from("x") }),
+    decryptPassword: () => "plain-pass",
+    librusFactory: () => ({
+      authorize: async () => {
+        authorizeCalls += 1;
+        // The first authorize() call (login A) hangs on its own gate; every
+        // later call shares a second gate so B and any wrongly-started C
+        // resolve together once released.
+        await (authorizeCalls === 1 ? gateA : gateRest);
+      },
+      exportSession: () => "fresh-jar",
+    }),
+    sessionsStore: {
+      save: (id, blob) => saved.push([id, blob.toString()]),
+      load: () => undefined,
+      remove() {},
+    },
+    encryptText: (text) => Buffer.from(text),
+    decryptText: () => "",
+  });
+
+  // Login A starts and is left in flight.
+  const loginA = manager.login(1);
+  await new Promise((resolve) => setImmediate(resolve));
+
+  // The user saves a new password: forget() bumps the generation and clears
+  // the pending slot.
+  manager.forget(1);
+
+  // A request arriving now starts login B, which becomes the new pending entry.
+  const loginB = manager.login(1);
+  await new Promise((resolve) => setImmediate(resolve));
+
+  // The abandoned login A now settles. Its generation no longer matches, so
+  // it does not resurrect the client - but its cleanup must not evict B's
+  // still-pending entry.
+  releaseA();
+  await loginA;
+
+  // A third request arrives after A has settled, while B is still pending.
+  // It must be deduplicated against B, not start a fresh login C.
+  manager.login(1);
+
+  releaseRest();
+  await loginB;
+
+  assert.equal(authorizeCalls, 2);
+});

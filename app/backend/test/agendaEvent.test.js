@@ -119,6 +119,44 @@ test("GET /api/accounts/:id/agenda/:eventId returns 404 for an all-empty event o
   }
 });
 
+test("GET /api/accounts/:id/agenda/:eventId returns 404 when getEvent resolves to 0", async () => {
+  // _singleMapper in lib/api.js returns the number 0 - not {} - when the
+  // detail table selector matches nothing, which is what production sees
+  // for an unreadable event (e.g. a teacher-absence entry).
+  const { server, base } = startApp(() => ({
+    authorize: async () => {},
+    calendar: { getEvent: async () => 0 },
+  }));
+  try {
+    const account = await createAccount(base);
+    const res = await fetch(`${base}/api/accounts/${account.id}/agenda/42`);
+    assert.equal(res.status, 404);
+  } finally {
+    server.close();
+  }
+});
+
+test("GET /api/accounts/:id/agenda/:eventId caches the event across requests", async () => {
+  let getEventCalls = 0;
+  const { server, base } = startApp(() => ({
+    authorize: async () => {},
+    calendar: {
+      getEvent: async () => {
+        getEventCalls += 1;
+        return { lesson: "Matematyka" };
+      },
+    },
+  }));
+  try {
+    const account = await createAccount(base);
+    assert.equal((await fetch(`${base}/api/accounts/${account.id}/agenda/42`)).status, 200);
+    assert.equal((await fetch(`${base}/api/accounts/${account.id}/agenda/42`)).status, 200);
+    assert.equal(getEventCalls, 1);
+  } finally {
+    server.close();
+  }
+});
+
 test("GET /api/accounts/:id/agenda/:eventId returns 502 when Librus keeps failing", async () => {
   const { server, base } = startApp(() => ({
     authorize: async () => {},

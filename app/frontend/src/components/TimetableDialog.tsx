@@ -23,6 +23,7 @@ export default function TimetableDialog({
   onDeleted: (id: number) => void;
 }) {
   async function handleDelete() {
+    if (!window.confirm(`Usunąć konto ${account.label}?`)) return;
     try {
       await deleteAccount(account.id);
       onOpenChange(false);
