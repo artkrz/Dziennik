@@ -7,6 +7,11 @@ const { createCache } = require("./cache.js");
 const { createAccountsRouter } = require("./routes/accounts.js");
 const { createTimetableRouter } = require("./routes/timetable.js");
 const { createMessagesRouter } = require("./routes/messages.js");
+const { createGradesRouter } = require("./routes/grades.js");
+const { createAbsencesRouter } = require("./routes/absences.js");
+const { createAgendaRouter } = require("./routes/agenda.js");
+const { createHomeworkRouter } = require("./routes/homework.js");
+const { createInfoRouter } = require("./routes/info.js");
 
 process.on("unhandledRejection", (err) => {
   // Only err.message - a raw AxiosError carries the plaintext Librus
@@ -51,6 +56,16 @@ function createApp({
   app.use("/api/accounts", createTimetableRouter({ sessionManager, cache }));
 
   app.use("/api/accounts", createMessagesRouter({ sessionManager, cache }));
+
+  app.use("/api/accounts", createGradesRouter({ sessionManager, cache }));
+
+  app.use("/api/accounts", createAbsencesRouter({ sessionManager, cache }));
+
+  app.use("/api/accounts", createAgendaRouter({ sessionManager, cache }));
+
+  app.use("/api/accounts", createHomeworkRouter({ sessionManager, cache }));
+
+  app.use("/api/accounts", createInfoRouter({ sessionManager, cache }));
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {
