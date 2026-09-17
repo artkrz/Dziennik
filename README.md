@@ -1,119 +1,123 @@
 # Dziennik
 
-[![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat)](LICENSE)
+[![Licencja](https://img.shields.io/badge/licencja-MIT-green.svg?style=flat)](LICENSE)
 
-A self-hosted dashboard for parents with children in
-[Librus Synergia](https://synergia.librus.pl/). Add each child once, then see
-their week, grades, attendance, agenda and messages without logging in and out
-of separate accounts. The interface is in Polish.
+Panel dla rodziców, których dzieci korzystają z
+[Librus Synergia](https://synergia.librus.pl/). Dodajesz każde dziecko raz,
+a potem widzisz jego plan lekcji, oceny, frekwencję, terminarz i wiadomości
+bez przelogowywania się między kontami.
 
-Runs on your own machine or server. Nothing is sent anywhere except Librus.
+Uruchamiasz go na własnym komputerze lub serwerze. Dane nie trafiają nigdzie
+poza Librusa.
 
 ---
 
 **⚠️ WAŻNE OSTRZEŻENIE**
 
 - Dziennik **nie jest oficjalnym produktem** firmy Librus / Synergia i nie jest z nimi powiązany w żaden sposób.
-- Korzysta z nieoficjalnego, reverse-engineered klienta HTTP działającego jak zwykła przeglądarka.
-- Korzystanie z niego może być niezgodne z [Regulaminem Synergia](https://synergia.librus.pl/regulamin) (w szczególności zakazem systematycznego pobierania danych).
-- Jest przeznaczony **wyłącznie do użytku prywatnego** — dla własnych kont i kont własnych dzieci.
-- **Nie używaj go do automatycznego scrapingu na dużą skalę**, botów, monitoringu klasowego ani komercyjnie.
-- Autorzy nie ponoszą żadnej odpowiedzialności za zablokowanie konta, utratę danych ani jakiekolwiek konsekwencje.
-- Używaj na własne ryzyko i z poszanowaniem limitów serwerów Librusa.
+- Korzysta z nieoficjalnego, odtworzonego przez analizę (reverse engineering) klienta HTTP, który działa jak zwykła przeglądarka.
+- Korzystanie z niego może być niezgodne z [Regulaminem Synergia](https://synergia.librus.pl/regulamin) (w szczególności z zakazem systematycznego pobierania danych).
+- Jest przeznaczony **wyłącznie do użytku prywatnego** — dla własnego konta i kont własnych dzieci.
+- **Nie używaj go do masowego scrapingu**, botów, monitorowania klasy ani do celów komercyjnych.
+- Autorzy nie ponoszą żadnej odpowiedzialności za zablokowanie konta, utratę danych ani jakiekolwiek inne konsekwencje.
+- Używaj na własną odpowiedzialność i z poszanowaniem limitów serwerów Librusa.
 
-A dashboard polls, which makes this warning matter more rather than less.
-Dziennik caches every response and reuses sessions specifically to keep that
-traffic close to what a person clicking around would generate.
+Panel odpytuje Librusa cyklicznie, więc powyższe ostrzeżenie jest tu ważniejsze,
+a nie mniej ważne. Dziennik buforuje każdą odpowiedź i ponownie wykorzystuje
+sesje właśnie po to, żeby ruch był zbliżony do tego, co generuje człowiek
+klikający po stronie.
 
 ---
 
-## What it does
+## Co potrafi
 
-Pick a child on the home screen; every other view follows that choice.
+Na ekranie głównym wybierasz dziecko — wszystkie pozostałe widoki podążają za
+tym wyborem.
 
-| View | |
+| Widok | |
 |---|---|
-| **Dzieci** | choose which child you are looking at |
-| **Plan lekcji** | the whole week, one tab per day, opening on today — or on the next day once today's lessons have finished |
-| **Oceny** | per-subject averages and the overall average |
-| **Frekwencja** | absence totals |
-| **Terminarz** | upcoming events, with details per entry |
-| **Wiadomości** | messages grouped into conversations and shown as a chat |
-| **Ustawienia** | add, rename or remove a child |
+| **Dzieci** | wybór dziecka, którego dane oglądasz |
+| **Plan lekcji** | cały tydzień, zakładka na każdy dzień; otwiera się na dziś — albo na kolejny dzień, jeśli dzisiejsze lekcje już się skończyły |
+| **Oceny** | średnie z poszczególnych przedmiotów i średnia ogólna |
+| **Frekwencja** | podsumowanie nieobecności |
+| **Terminarz** | nadchodzące wydarzenia, ze szczegółami każdego wpisu |
+| **Wiadomości** | wiadomości pogrupowane w rozmowy i pokazane jak czat |
+| **Ustawienia** | dodanie, zmiana nazwy lub usunięcie dziecka |
 
-Two behaviours worth knowing before you use it:
+Dwie rzeczy, o których warto wiedzieć przed użyciem:
 
-- **Opening a message marks it read on Librus**, exactly as it would in the
-  real app. Conversation bodies therefore load one at a time when you click
-  them — opening a thread to glance at it does not mark the whole thing read.
-- **Renaming a child keeps their stored session.** Changing a stored password
-  is verified against Librus before it is saved, so a typo cannot quietly break
-  the account.
+- **Otwarcie wiadomości oznacza ją w Librusie jako przeczytaną** — dokładnie tak
+  samo jak w oryginalnej aplikacji. Dlatego treści w rozmowie wczytują się
+  pojedynczo, po kliknięciu: zajrzenie do wątku nie oznacza od razu wszystkich
+  wiadomości jako przeczytanych.
+- **Zmiana nazwy dziecka zachowuje jego zapisaną sesję.** Zmiana zapisanego
+  hasła jest weryfikowana w Librusie przed zapisaniem, więc literówka nie
+  zepsuje po cichu konta.
 
-## Running it
+## Uruchomienie
 
 ```bash
 cp .env.example .env
-openssl rand -base64 32          # paste into ACCOUNTS_ENC_KEY in .env
+openssl rand -base64 32          # wynik wklej do ACCOUNTS_ENC_KEY w .env
 docker compose up -d --build
 ```
 
-Then open <http://localhost:3000>.
+Następnie otwórz <http://localhost:3000>.
 
-| Variable | Required | Meaning |
+| Zmienna | Wymagana | Znaczenie |
 |---|---|---|
-| `ACCOUNTS_ENC_KEY` | yes | Base64 32-byte key encrypting stored passwords and sessions. The backend refuses to start without it. |
-| `CACHE_TTL_MS` | no | How long a Librus response stays fresh. Default `300000` (5 min). Lower means more traffic to Librus. |
-| `DB_PATH` | no | SQLite location. Set to `/data/accounts.db` inside the container. |
+| `ACCOUNTS_ENC_KEY` | tak | Klucz (32 bajty, base64) szyfrujący zapisane hasła i sesje. Bez niego backend się nie uruchomi. |
+| `CACHE_TTL_MS` | nie | Jak długo odpowiedź z Librusa pozostaje aktualna. Domyślnie `300000` (5 minut). Mniejsza wartość to większy ruch do Librusa. |
+| `DB_PATH` | nie | Położenie bazy SQLite. W kontenerze ustawione na `/data/accounts.db`. |
 
-> **Back up `ACCOUNTS_ENC_KEY` somewhere other than the server.** Lose it and
-> every stored account is unrecoverable — the passwords cannot be decrypted
-> without it, and each child has to be added again.
+> **Zrób kopię `ACCOUNTS_ENC_KEY` w innym miejscu niż serwer.** Jeśli go
+> stracisz, wszystkie zapisane konta przepadają — bez niego haseł nie da się
+> odszyfrować i każde dziecko trzeba dodać od nowa.
 
-The dashboard is served on port `3000`. The backend binds to `127.0.0.1:3001`
-and is not reachable from outside the host — it has no authentication of its
-own, so **do not expose it directly to the internet**. Put it behind a VPN or
-an authenticating reverse proxy if you want access from elsewhere.
+Panel działa na porcie `3000`. Backend nasłuchuje na `127.0.0.1:3001` i nie
+jest dostępny spoza hosta — **nie ma własnego uwierzytelniania, więc nie
+wystawiaj go bezpośrednio do internetu**. Jeśli chcesz mieć dostęp z zewnątrz,
+schowaj go za VPN-em albo za reverse proxy z logowaniem.
 
-## What it stores
+## Co przechowuje
 
-SQLite, in a named Docker volume:
+Baza SQLite w nazwanym wolumenie Dockera:
 
-- **Accounts** — a label, the Synergia login, and the password encrypted with
-  AES-256-GCM. The password has to be recoverable rather than hashed because
-  Librus sessions are short-lived and Dziennik must be able to log in again
-  unattended.
-- **Sessions** — the serialized cookie jar, encrypted the same way. Treat it
-  as a credential in its own right: anyone holding it is logged in as that
-  student until it expires.
+- **Konta** — etykieta, login Synergii oraz hasło zaszyfrowane algorytmem
+  AES-256-GCM. Hasło musi dać się odszyfrować (a nie tylko zahaszować),
+  ponieważ sesje Librusa są krótkie i Dziennik musi umieć zalogować się
+  ponownie bez udziału człowieka.
+- **Sesje** — zserializowany zestaw ciasteczek, zaszyfrowany tak samo. Traktuj
+  go jak osobne poświadczenie: kto go ma, jest zalogowany jako dany uczeń aż do
+  wygaśnięcia sesji.
 
-Neither is ever written to a log or returned over HTTP.
+Żadne z nich nigdy nie trafia do logów ani nie jest zwracane przez API.
 
-## How it works
+## Jak to działa
 
 ```
-app/frontend/   React + Vite dashboard, served by nginx
-app/backend/    Express API, SQLite, session manager, response cache
-lib/            the Librus Synergia client — see Credits
-scripts/        gateway-smoke-test.js, a hand-run probe for API research
-docs/           design notes and known issues
+app/frontend/   panel w React + Vite, serwowany przez nginx
+app/backend/    API w Express, SQLite, zarządzanie sesjami, bufor odpowiedzi
+lib/            klient Librus Synergia — zobacz Podziękowania
+scripts/        gateway-smoke-test.js — ręcznie uruchamiana sonda do badania API
+docs/           notatki projektowe i znane problemy
 ```
 
-The backend keeps one logged-in Librus client per child, caches responses for
-`CACHE_TTL_MS`, and re-authenticates when a session dies. Synergia's session
-cookie lasts about **ten minutes**, and a stale one fails in an unhelpful way —
-Librus answers with an ordinary-looking `200` whose body is an access-denied
-notice rather than redirecting to the login page. Dziennik checks the cookie
-directly instead of guessing from empty results, and carries the long-lived
-device cookie into each new login so that repeated logins do not trigger a
-captcha.
+Backend trzyma jednego zalogowanego klienta Librusa na dziecko, buforuje
+odpowiedzi przez `CACHE_TTL_MS` i loguje się ponownie, gdy sesja wygaśnie.
+Ciasteczko sesyjne Synergii żyje około **dziesięciu minut**, a przeterminowane
+zawodzi w mylący sposób: Librus odpowiada zwyczajnie wyglądającym kodem `200`,
+którego treścią jest komunikat o braku dostępu, zamiast przekierować na stronę
+logowania. Dziennik sprawdza więc samo ciasteczko, zamiast zgadywać na
+podstawie pustych wyników, i przenosi długo żyjące ciasteczko urządzenia do
+każdego nowego logowania, żeby powtarzane logowania nie wywołały captchy.
 
-### Internal API
+### Wewnętrzne API
 
-Consumed by the frontend, under `/api/accounts`. Listed for anyone modifying
-Dziennik; it is not a public interface and has no auth.
+Używane przez panel, pod `/api/accounts`. Spisane dla osób modyfikujących
+Dziennik — nie jest to interfejs publiczny i nie ma uwierzytelniania.
 
-| Method | Path |
+| Metoda | Ścieżka |
 |---|---|
 | `GET` `POST` | `/` |
 | `PATCH` `DELETE` | `/:id` |
@@ -122,36 +126,37 @@ Dziennik; it is not a public interface and has no auth.
 | `GET` | `/:id/agenda?month=&year=` · `/:id/agenda/:eventId` |
 | `GET` | `/:id/homework?from=&to=&subject=` |
 | `GET` | `/:id/threads` · `/:id/messages` · `/:id/messages/sent` |
-| `GET` | `/:id/messages/:messageId?folder=` — **marks the message read on Librus** |
+| `GET` | `/:id/messages/:messageId?folder=` — **oznacza wiadomość jako przeczytaną w Librusie** |
 | `GET` | `/:id/lucky-number` · `/:id/announcements` |
 
-## Development
+## Praca nad kodem
 
 ```bash
-npm install            && npm test      # Librus client — 25 tests
-cd app/backend  && npm install && npm test      # API — 94 tests
-cd app/frontend && npm install && npm test      # helpers — 28 tests
-cd app/frontend && npm run build                # typecheck + build
+npm install            && npm test      # klient Librusa — 25 testów
+cd app/backend  && npm install && npm test      # API — 94 testy
+cd app/frontend && npm install && npm test      # funkcje pomocnicze — 28 testów
+cd app/frontend && npm run build                # sprawdzenie typów + build
 ```
 
-Known rough edges, deliberately unfixed, are written up in
+Znane niedoskonałości, świadomie niepoprawione, są opisane w
 [`docs/superpowers/2026-09-16-known-issues-and-followups.md`](docs/superpowers/2026-09-16-known-issues-and-followups.md).
-Worth reading before changing the session or scraping layers.
+Warto przeczytać przed zmianami w warstwie sesji albo scrapingu.
 
-## Credits
+## Podziękowania
 
-Dziennik is built on a fork of
-**[Mati365/librus-api](https://github.com/Mati365/librus-api)** by
-**Mateusz Bagiński** and **Krzysztof Rzymkowski** — the Librus Synergia HTTP
-client that became `lib/`. Without it this app would have started from an empty
-page. It is used and modified under the MIT licence.
+Dziennik powstał na forku projektu
+**[Mati365/librus-api](https://github.com/Mati365/librus-api)** autorstwa
+**Mateusza Bagińskiego** i **Krzysztofa Rzymkowskiego** — to ich klient HTTP do
+Librus Synergia stał się katalogiem `lib/`. Bez niego ta aplikacja zaczynałaby
+od pustej strony. Jest używany i modyfikowany na warunkach licencji MIT.
 
-That client has since diverged: it gained session persistence, typed errors,
-captcha and expiry detection, and a test suite. Bugs in this fork are not
-theirs. The modified client is still published to npm as
-[`librus-api`](https://www.npmjs.com/package/librus-api) from this repository.
+Ten klient od tego czasu się rozszedł z oryginałem: doszły trwałe sesje, typowane
+błędy, wykrywanie captchy i wygasłej sesji oraz testy. Błędy w tym forku nie są
+winą autorów oryginału. Zmodyfikowany klient nadal jest publikowany w npm jako
+[`librus-api`](https://www.npmjs.com/package/librus-api) z tego repozytorium.
 
-## Licence
+## Licencja
 
-MIT — see [LICENSE](LICENSE), which retains the original authors' copyright
-notice as that licence requires.
+MIT — zobacz [LICENSE](LICENSE), gdzie zachowana jest nota o prawach autorskich
+oryginalnych autorów, czego ta licencja wymaga. Sam tekst licencji pozostaje po
+angielsku: to jego kanoniczne brzmienie i tłumaczenie nie miałoby mocy prawnej.
