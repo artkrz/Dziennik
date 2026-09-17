@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+# Cancel an in-progress run when the same PR is pushed to again.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Testy i build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node 20 matches both Dockerfiles, so CI fails the way production would.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Klient Librusa
+        run: |
+          npm ci
+          npm test
+
+      - name: Backend
+        working-directory: app/backend
+        run: |
+          npm ci
+          npm test
+
+      - name: Frontend
+        working-directory: app/frontend
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+  guards:
+    name: Zabezpieczenia
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # gitleaks scans history, not just the tip.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # The real password-leak vector in this project. An AxiosError carries
+      # the plaintext Librus password in error.config.data, so a raw error
+      # object must never be handed to console.*. Only error.message may be.
+      # No generic secret scanner catches this - it is not a committed secret,
+      # it is a runtime one.
+      - name: Surowy obiekt błędu w console.*
+        run: |
+          if grep -rnE 'console\.(error|log|warn|info)\((\s*|[^)]*,\s*)(err|error)\s*\)' \
+               lib app/backend/src app/frontend/src scripts; then
+            echo "::error::Surowy obiekt błędu trafia do console.*. AxiosError niesie hasło Librusa w error.config.data - loguj wyłącznie error.message."
+            exit 1
+          fi
+          echo "OK - nigdzie nie logujemy surowego błędu."
+
+      # Librus content is third-party and reaches the UI as message bodies,
+      # event descriptions and announcements.
+      - name: dangerouslySetInnerHTML
+        run: |
+          if grep -rn 'dangerouslySetInnerHTML' app/frontend/src lib; then
+            echo "::error::dangerouslySetInnerHTML na treściach z Librusa (third-party). Renderuj tekst."
+            exit 1
+          fi
+          echo "OK - brak dangerouslySetInnerHTML."
+
+      # The npm tarball once shipped the entire dashboard - 102 files, 788 kB,
+      # of which 6 were the library. `files: ["lib/"]` fixed it; this stops it
+      # coming back silently, because nobody notices until after a publish.
+      - name: Zawartość paczki npm
+        run: |
+          npm ci
+          npm pack --dry-run --json > /tmp/pack.json
+          node -e '
+            const files = require("/tmp/pack.json")[0].files.map((f) => f.path);
+            const allowed = new Set(["README.md", "LICENSE", "package.json"]);
+            const stray = files.filter((f) => !f.startsWith("lib/") && !allowed.has(f));
+            if (stray.length) {
+              console.error("::error::Paczka npm zawiera pliki spoza lib/: " + stray.join(", "));
+              process.exit(1);
+            }
+            console.log("OK - paczka ma " + files.length + " plików, wyłącznie lib/ i metadane.");
+          '
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
