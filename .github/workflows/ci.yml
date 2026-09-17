@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   tests:
-    name: Testy i build
+    name: Tests and build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: 20
 
-      - name: Klient Librusa
+      - name: Librus client
         run: |
           npm ci
           npm test
@@ -45,7 +45,7 @@ jobs:
           npm run build
 
   guards:
-    name: Zabezpieczenia
+    name: Guards
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,29 +62,29 @@ jobs:
       # object must never be handed to console.*. Only error.message may be.
       # No generic secret scanner catches this - it is not a committed secret,
       # it is a runtime one.
-      - name: Surowy obiekt błędu w console.*
+      - name: Raw error object in console.*
         run: |
           if grep -rnE 'console\.(error|log|warn|info)\((\s*|[^)]*,\s*)(err|error)\s*\)' \
                lib app/backend/src app/frontend/src scripts; then
-            echo "::error::Surowy obiekt błędu trafia do console.*. AxiosError niesie hasło Librusa w error.config.data - loguj wyłącznie error.message."
+            echo "::error::A raw error object reaches console.*. An AxiosError carries the plaintext Librus password in error.config.data - log error.message only."
             exit 1
           fi
-          echo "OK - nigdzie nie logujemy surowego błędu."
+          echo "OK - no raw error is logged."
 
       # Librus content is third-party and reaches the UI as message bodies,
       # event descriptions and announcements.
       - name: dangerouslySetInnerHTML
         run: |
           if grep -rn 'dangerouslySetInnerHTML' app/frontend/src lib; then
-            echo "::error::dangerouslySetInnerHTML na treściach z Librusa (third-party). Renderuj tekst."
+            echo "::error::dangerouslySetInnerHTML on third-party Librus content. Render text instead."
             exit 1
           fi
-          echo "OK - brak dangerouslySetInnerHTML."
+          echo "OK - no dangerouslySetInnerHTML."
 
       # The npm tarball once shipped the entire dashboard - 102 files, 788 kB,
       # of which 6 were the library. `files: ["lib/"]` fixed it; this stops it
       # coming back silently, because nobody notices until after a publish.
-      - name: Zawartość paczki npm
+      - name: npm package contents
         run: |
           npm ci
           npm pack --dry-run --json > /tmp/pack.json
@@ -93,10 +93,10 @@ jobs:
             const allowed = new Set(["README.md", "LICENSE", "package.json"]);
             const stray = files.filter((f) => !f.startsWith("lib/") && !allowed.has(f));
             if (stray.length) {
-              console.error("::error::Paczka npm zawiera pliki spoza lib/: " + stray.join(", "));
+              console.error("::error::npm package contains files outside lib/: " + stray.join(", "));
               process.exit(1);
             }
-            console.log("OK - paczka ma " + files.length + " plików, wyłącznie lib/ i metadane.");
+            console.log("OK - package has " + files.length + " files, lib/ and metadata only.");
           '
 
       - name: gitleaks
