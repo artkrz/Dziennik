@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Account, deleteAccount } from "../api";
 import AddAccountForm from "./AddAccountForm";
 import EditAccountDialog from "./EditAccountDialog";
+import ThemeSetting from "./ThemeSetting";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Button } from "./ui/button";
 import {
@@ -45,6 +46,11 @@ export default function SettingsView({
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <h2 className="text-sm font-semibold text-muted-foreground">Wygląd</h2>
+        <ThemeSetting />
+      </div>
+
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
